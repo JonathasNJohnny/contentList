@@ -1,0 +1,16 @@
+export const viteColors = {
+  text: 'var(--text)',
+  heading: 'var(--text-h)',
+  muted: 'var(--text-muted)',
+  background: 'var(--bg)',
+  surface: 'var(--surface)',
+  surfaceSoft: 'var(--surface-soft)',
+  border: 'var(--border)',
+  accent: 'var(--accent)',
+  accentStrong: 'var(--accent-strong)',
+  accentBackground: 'var(--accent-bg)',
+  accentBorder: 'var(--accent-border)',
+  viteBlue: 'var(--vite-blue)',
+  viteYellow: 'var(--vite-yellow)',
+  danger: 'var(--danger)',
+} as const

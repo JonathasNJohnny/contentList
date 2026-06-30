@@ -1,0 +1,226 @@
+.auth-page {
+  min-height: 100svh;
+  display: grid;
+  place-items: center;
+  padding: 32px 20px;
+  box-sizing: border-box;
+  background:
+    radial-gradient(circle at 20% 18%, rgba(65, 209, 255, 0.16), transparent 32%),
+    radial-gradient(circle at 80% 82%, rgba(255, 197, 23, 0.14), transparent 30%),
+    var(--bg);
+}
+
+.auth-card {
+  width: min(100%, 420px);
+  padding: 28px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  text-align: left;
+  box-sizing: border-box;
+}
+
+.auth-tabs {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px;
+}
+
+.auth-tabs button,
+.mode-link,
+.password-field button,
+.primary-action,
+.secondary-action,
+.guest-action {
+  font: inherit;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition:
+    border-color 0.2s,
+    background 0.2s,
+    color 0.2s,
+    box-shadow 0.2s;
+}
+
+.auth-tabs button {
+  padding: 7px 10px;
+  color: var(--text);
+  background: var(--surface-soft);
+  border-color: var(--border);
+}
+
+.auth-tabs button.active {
+  color: var(--accent);
+  border-color: var(--accent-border);
+  background: var(--accent-bg);
+}
+
+.auth-heading {
+  margin: 28px 0 24px;
+}
+
+.auth-heading h1 {
+  margin: 0 0 8px;
+  font-size: 36px;
+  line-height: 1.05;
+  letter-spacing: 0;
+}
+
+.auth-heading p {
+  color: var(--text-muted);
+}
+
+.auth-form {
+  display: grid;
+  gap: 16px;
+}
+
+.auth-form label {
+  display: grid;
+  gap: 8px;
+}
+
+.auth-form span {
+  color: var(--text-h);
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.auth-form input {
+  width: 100%;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-h);
+  background: var(--bg);
+  font: inherit;
+  box-sizing: border-box;
+}
+
+.auth-form input::placeholder {
+  color: var(--text-muted);
+}
+
+.auth-form input:focus,
+.auth-tabs button:focus-visible,
+.mode-link:focus-visible,
+.password-field button:focus-visible,
+.primary-action:focus-visible,
+.secondary-action:focus-visible,
+.guest-action:focus-visible {
+  outline: none;
+  border-color: var(--accent-border);
+  box-shadow: var(--focus-ring);
+}
+
+.password-field {
+  display: grid;
+  grid-template-columns: 1fr 44px;
+  align-items: center;
+}
+
+.password-field input {
+  grid-column: 1 / -1;
+  grid-row: 1;
+  padding-right: 48px;
+}
+
+.password-field button {
+  grid-column: 2;
+  grid-row: 1;
+  width: 34px;
+  height: 34px;
+  margin-right: 5px;
+  color: var(--text);
+  background: transparent;
+}
+
+.password-field button:hover {
+  color: var(--accent);
+  background: var(--accent-bg);
+}
+
+.eye-icon {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.auth-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.primary-action,
+.secondary-action {
+  min-height: 44px;
+  padding: 0 14px;
+}
+
+.primary-action {
+  color: #fff;
+  background: linear-gradient(135deg, var(--accent-strong), var(--vite-blue));
+}
+
+.primary-action:hover {
+  border-color: var(--accent-border);
+}
+
+.secondary-action {
+  color: var(--text-h);
+  background: var(--surface-soft);
+  border-color: var(--border);
+}
+
+.secondary-action:hover {
+  color: var(--accent);
+  border-color: var(--accent-border);
+}
+
+.guest-action {
+  width: 100%;
+  min-height: 44px;
+  margin-top: 16px;
+  padding: 0 14px;
+  color: var(--text-h);
+  background: var(--surface-soft);
+  border-color: var(--border);
+}
+
+.guest-action:hover {
+  color: var(--accent);
+  border-color: var(--accent-border);
+}
+
+.mode-link {
+  width: 100%;
+  margin-top: 18px;
+  padding: 0;
+  color: var(--accent);
+  background: transparent;
+  border: 0;
+  text-align: center;
+}
+
+.mode-link:hover {
+  color: var(--accent-strong);
+}
+
+@media (max-width: 480px) {
+  .auth-card {
+    padding: 22px;
+  }
+
+  .auth-actions {
+    grid-template-columns: 1fr;
+  }
+}
