@@ -9,10 +9,32 @@
 
 .main-navbar nav {
   display: flex;
+  align-items: center;
   gap: 8px;
   width: min(100% - 32px, 1180px);
   margin: 0 auto;
   padding: 12px 0;
+}
+
+.navbar-top {
+  flex: 0 0 auto;
+}
+
+.main-navbar .profile-picture {
+  display: block;
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: var(--surface-soft);
+  object-fit: cover;
+}
+
+.category-menu {
+  display: flex;
+  flex: 1 1 auto;
+  gap: 8px;
+  min-width: 0;
   overflow-x: auto;
   scrollbar-width: thin;
 }
@@ -28,6 +50,10 @@
   font: inherit;
   white-space: nowrap;
   cursor: pointer;
+}
+
+.menu-toggle {
+  display: none;
 }
 
 .main-navbar button:hover,
@@ -46,6 +72,60 @@
 
 @media (max-width: 640px) {
   .main-navbar nav {
+    display: grid;
     width: min(100% - 24px, 1180px);
+    padding: 8px 0;
+    overflow: visible;
+  }
+
+  .navbar-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .main-navbar .profile-picture {
+    width: 40px;
+    height: 40px;
+  }
+
+  .menu-toggle {
+    display: inline-grid;
+    place-items: center;
+    gap: 4px;
+    width: 42px;
+    height: 38px;
+    min-height: 38px;
+    min-width: 0;
+    padding: 0;
+    border-color: var(--border);
+    background: var(--surface);
+  }
+
+  .menu-toggle span {
+    display: block;
+    width: 18px;
+    height: 2px;
+    border-radius: 999px;
+    background: currentColor;
+  }
+
+  .category-menu {
+    display: none;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    padding-top: 10px;
+    overflow: visible;
+  }
+
+  .main-navbar nav.is-open .category-menu {
+    display: grid;
+  }
+
+  .category-menu button {
+    width: 100%;
+    min-width: 0;
+    justify-content: center;
   }
 }

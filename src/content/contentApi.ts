@@ -1,5 +1,5 @@
 export type ContentCategory =
-  | "Todos"
+  | "Para Voce"
   | "Animes"
   | "Mangas"
   | "Filmes"
@@ -41,7 +41,7 @@ type ApiContentResponse =
     };
 
 export const contentCategories: ContentCategory[] = [
-  "Todos",
+  "Para Voce",
   "Animes",
   "Mangas",
   "Filmes",
@@ -50,8 +50,18 @@ export const contentCategories: ContentCategory[] = [
   "Jogos",
 ];
 
+export const contentCategoryLabels: Record<ContentCategory, string> = {
+  "Para Voce": "Para Você",
+  Animes: "Animes",
+  Mangas: "Mangas",
+  Filmes: "Filmes",
+  Series: "Series",
+  Livros: "Livros",
+  Jogos: "Jogos",
+};
+
 const categorySlugs: Record<ContentCategory, string> = {
-  Todos: "todos",
+  "Para Voce": "todos",
   Animes: "animes",
   Mangas: "mangas",
   Filmes: "filmes",
@@ -103,6 +113,27 @@ export async function fetchContentByCategory(
 
   if (!response.ok) {
     throw new Error("Nao foi possivel carregar os conteudos agora.");
+  }
+
+  const result = (await response.json()) as ApiContentResponse;
+
+  return normalizeContentResponse(result);
+}
+
+export async function searchContentByCategory(
+  category: ContentCategory,
+  query: string,
+  page: number,
+  signal?: AbortSignal,
+): Promise<ContentResponse> {
+  const slug = categorySlugs[category];
+  const url = new URL(`${getApiBaseUrl()}/api/content/${slug}/search/${page}`);
+  url.searchParams.set("query", query);
+
+  const response = await fetch(url, { signal });
+
+  if (!response.ok) {
+    throw new Error("Nao foi possivel pesquisar os conteudos agora.");
   }
 
   const result = (await response.json()) as ApiContentResponse;

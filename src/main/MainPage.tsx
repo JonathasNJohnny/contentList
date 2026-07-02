@@ -1,104 +1,209 @@
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
-import { useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import type { FormEvent } from "react";
+import { useState } from "react";
 import {
+  contentCategoryLabels,
   fetchContentByCategory,
+  searchContentByCategory,
   type ContentCategory,
 } from "../content/contentApi";
 import { Navbar } from "../navbar";
 import "./MainPage.css";
 
+const forYouCategory: ContentCategory = "Para Voce";
+
 export function MainPage() {
-  const [activeCategory, setActiveCategory] = useState<ContentCategory>("Animes");
+  const [activeCategory, setActiveCategory] =
+    useState<ContentCategory>("Animes");
   const [contentPage, setContentPage] = useState(1);
+  const [searchInput, setSearchInput] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const isForYouPage = activeCategory === forYouCategory;
+  const activeCategoryLabel = contentCategoryLabels[activeCategory];
+  const trimmedSearchQuery = searchQuery.trim();
+  const isSearching = trimmedSearchQuery.length > 0;
 
   const { data, error, isError, isFetching, isPending } = useQuery({
-    queryKey: ["content", activeCategory, contentPage],
-    queryFn: ({ signal }) => fetchContentByCategory(activeCategory, contentPage, signal),
-    placeholderData: keepPreviousData,
+    queryKey: ["content", activeCategory, contentPage, trimmedSearchQuery],
+    queryFn: ({ signal }) => {
+      if (isSearching) {
+        return searchContentByCategory(
+          activeCategory,
+          trimmedSearchQuery,
+          contentPage,
+          signal,
+        );
+      }
+
+      return fetchContentByCategory(activeCategory, contentPage, signal);
+    },
+    enabled: !isForYouPage,
+    refetchOnWindowFocus: false,
   });
 
-  const items = data?.items ?? [];
+  const items = isForYouPage ? [] : (data?.items ?? []);
   const lastPage = data?.lastPage ?? 1;
   const hasNextPage = data?.hasNextPage ?? false;
-
-  const pageDescription = useMemo(() => {
-    if (activeCategory === "Todos") {
-      return "Conteudos de todas as categorias";
-    }
-
-    return "Catalogo paginado";
-  }, [activeCategory]);
+  const contentListKey = `${activeCategory}:${contentPage}:${trimmedSearchQuery || "all"}`;
+  const shouldShowSkeleton = !isForYouPage && isPending;
+  const skeletonCardCount = 10;
+  const hasNoResults =
+    !isForYouPage && !shouldShowSkeleton && !isError && items.length === 0;
 
   function handleCategoryChange(category: ContentCategory) {
     setActiveCategory(category);
     setContentPage(1);
+    setSearchInput("");
+    setSearchQuery("");
+  }
+
+  function handleSearchSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setSearchQuery(searchInput.trim());
+    setContentPage(1);
+  }
+
+  function handleClearSearch() {
+    setSearchInput("");
+    setSearchQuery("");
+    setContentPage(1);
   }
 
   const errorMessage =
-    error instanceof Error ? error.message : "Nao foi possivel carregar esta categoria agora.";
+    error instanceof Error
+      ? error.message
+      : "Nao foi possivel carregar esta categoria agora.";
 
   return (
     <main className="main-page">
-      <Navbar activeCategory={activeCategory} onCategoryChange={handleCategoryChange} />
+      <Navbar
+        activeCategory={activeCategory}
+        onCategoryChange={handleCategoryChange}
+      />
 
       <section className="content-shell" aria-labelledby="content-title">
         <div className="content-heading">
           <div>
-            <h1 id="content-title">{activeCategory}</h1>
-            <p>{pageDescription}</p>
+            <h1 id="content-title">{activeCategoryLabel}</h1>
+            {/* <p>{pageDescription}</p> */}
           </div>
 
-          <div className="pagination-status" aria-label="Pagina atual">
-            Pagina {contentPage}
-          </div>
+          {!isForYouPage && (
+            <div className="pagination-status" aria-label="Pagina atual">
+              Pagina {contentPage}
+            </div>
+          )}
         </div>
 
-        {isError && <p className="content-message error-message">{errorMessage}</p>}
-        {isPending && <p className="content-message">Carregando conteudos...</p>}
-        {isFetching && !isPending && (
-          <p className="content-message">Atualizando conteudos...</p>
+        {!isForYouPage && (
+          <form className="content-search" onSubmit={handleSearchSubmit}>
+            {/* <label htmlFor="content-search-input">Pesquisar</label> */}
+            <div className="content-search-controls">
+              <input
+                id="content-search-input"
+                type="search"
+                value={searchInput}
+                onChange={(event) => setSearchInput(event.target.value)}
+                placeholder={`Buscar em ${activeCategoryLabel}`}
+              />
+              <button type="submit" disabled={isFetching}>
+                Pesquisar
+              </button>
+              {isSearching && (
+                <button
+                  type="button"
+                  className="secondary-button"
+                  onClick={handleClearSearch}
+                  disabled={isFetching}
+                >
+                  Limpar
+                </button>
+              )}
+            </div>
+          </form>
         )}
 
-        {!isPending && !isError && (
-          <div className="content-grid">
-            {items.map((item) => (
-              <article className="content-card" key={item.id}>
-                <div className="content-poster">
-                  {item.image ? (
-                    <img src={item.image} alt={item.title} loading="lazy" />
-                  ) : (
-                    <span>Sem imagem</span>
-                  )}
-                </div>
+        {isError && !shouldShowSkeleton && (
+          <p className="content-message error-message">{errorMessage}</p>
+        )}
 
-                <div className="content-info">
-                  <h2>{item.title}</h2>
-                  <dl>
-                    <div>
-                      <dt>Tipo</dt>
-                      <dd>{item.meta.first}</dd>
+        {hasNoResults && (
+          <p className="content-message">Nenhum conteudo encontrado.</p>
+        )}
+
+        {!isForYouPage && !isError && !hasNoResults && (
+          <div
+            className="content-grid"
+            key={contentListKey}
+            aria-busy={shouldShowSkeleton}
+          >
+            {shouldShowSkeleton
+              ? Array.from({ length: skeletonCardCount }).map((_, index) => (
+                  <article
+                    className="content-card content-card-skeleton"
+                    key={`content-skeleton-${index}`}
+                    aria-hidden="true"
+                  >
+                    <div className="content-poster skeleton-block" />
+
+                    <div className="content-info">
+                      <div className="skeleton-line skeleton-title" />
+                      <div className="skeleton-meta">
+                        <span className="skeleton-line" />
+                        <span className="skeleton-line" />
+                        <span className="skeleton-line" />
+                      </div>
+                      <div className="skeleton-copy">
+                        <span className="skeleton-line" />
+                        <span className="skeleton-line" />
+                        <span className="skeleton-line" />
+                      </div>
                     </div>
-                    <div>
-                      <dt>Nota</dt>
-                      <dd>{item.meta.second}</dd>
+                  </article>
+                ))
+              : items.map((item, index) => (
+                  <article
+                    className="content-card"
+                    key={`${contentListKey}:${item.id || item.title}:${index}`}
+                  >
+                    <div className="content-poster">
+                      {item.image ? (
+                        <img src={item.image} alt={item.title} loading="lazy" />
+                      ) : (
+                        <span>Sem imagem</span>
+                      )}
                     </div>
-                    <div>
-                      <dt>Ano</dt>
-                      <dd>{item.meta.third}</dd>
+
+                    <div className="content-info">
+                      <h2>{item.title}</h2>
+                      <dl>
+                        <div>
+                          <dt>Tipo</dt>
+                          <dd>{item.meta.first}</dd>
+                        </div>
+                        <div>
+                          <dt>Nota</dt>
+                          <dd>{item.meta.second}</dd>
+                        </div>
+                        <div>
+                          <dt>Ano</dt>
+                          <dd>{item.meta.third}</dd>
+                        </div>
+                      </dl>
+                      <p>{item.description ?? "Sem descricao disponivel."}</p>
                     </div>
-                  </dl>
-                  <p>{item.description ?? "Sem descricao disponivel."}</p>
-                </div>
-              </article>
-            ))}
+                  </article>
+                ))}
           </div>
         )}
 
-        {activeCategory !== "Todos" && (
+        {!isForYouPage && !hasNoResults && (
           <div className="pagination-actions">
             <button
               type="button"
-              onClick={() => setContentPage((currentPage) => Math.max(1, currentPage - 1))}
+              onClick={() =>
+                setContentPage((currentPage) => Math.max(1, currentPage - 1))
+              }
               disabled={contentPage === 1 || isFetching}
             >
               Anterior
