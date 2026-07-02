@@ -28,6 +28,7 @@
   border-radius: 50%;
   background: var(--surface-soft);
   object-fit: cover;
+  cursor: pointer;
 }
 
 .category-menu {

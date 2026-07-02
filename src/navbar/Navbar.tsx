@@ -9,9 +9,14 @@ import "./Navbar.css";
 type NavbarProps = {
   activeCategory: ContentCategory;
   onCategoryChange: (category: ContentCategory) => void;
+  onProfileClick: () => void;
 };
 
-export function Navbar({ activeCategory, onCategoryChange }: NavbarProps) {
+export function Navbar({
+  activeCategory,
+  onCategoryChange,
+  onProfileClick,
+}: NavbarProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   function handleCategoryClick(category: ContentCategory) {
@@ -21,12 +26,16 @@ export function Navbar({ activeCategory, onCategoryChange }: NavbarProps) {
 
   return (
     <header className="main-navbar">
-      <nav className={isMenuOpen ? "is-open" : undefined} aria-label="Categorias">
+      <nav
+        className={isMenuOpen ? "is-open" : undefined}
+        aria-label="Categorias"
+      >
         <div className="navbar-top">
           <img
             className="profile-picture"
             src="https://www.transparentpng.com/thumb/circle/PbI15B-circle-transparent-background.png"
             alt="Foto de perfil"
+            onClick={onProfileClick}
           />
 
           <button

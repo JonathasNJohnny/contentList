@@ -160,6 +160,10 @@
   margin-top: 6px;
 }
 
+.auth-actions.single-action {
+  grid-template-columns: 1fr;
+}
+
 .primary-action,
 .secondary-action {
   min-height: 44px;
@@ -213,6 +217,33 @@
 
 .mode-link:hover {
   color: var(--accent-strong);
+}
+
+.auth-feedback {
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface-soft);
+  font-size: 14px;
+}
+
+.auth-feedback.error {
+  color: var(--danger);
+  border-color: color-mix(in srgb, var(--danger) 45%, var(--border));
+}
+
+.auth-feedback.success {
+  color: #15803d;
+  border-color: rgba(21, 128, 61, 0.45);
+}
+
+.primary-action:disabled,
+.secondary-action:disabled,
+.guest-action:disabled,
+.mode-link:disabled,
+.password-field button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
 }
 
 @media (max-width: 480px) {

@@ -12,7 +12,11 @@ import "./MainPage.css";
 
 const forYouCategory: ContentCategory = "Para Voce";
 
-export function MainPage() {
+type MainPageProps = {
+  onProfileClick: () => void;
+};
+
+export function MainPage({ onProfileClick }: MainPageProps) {
   const [activeCategory, setActiveCategory] =
     useState<ContentCategory>("Animes");
   const [contentPage, setContentPage] = useState(1);
@@ -79,6 +83,7 @@ export function MainPage() {
       <Navbar
         activeCategory={activeCategory}
         onCategoryChange={handleCategoryChange}
+        onProfileClick={onProfileClick}
       />
 
       <section className="content-shell" aria-labelledby="content-title">
@@ -105,6 +110,7 @@ export function MainPage() {
                 value={searchInput}
                 onChange={(event) => setSearchInput(event.target.value)}
                 placeholder={`Buscar em ${activeCategoryLabel}`}
+                autoComplete="off"
               />
               <button type="submit" disabled={isFetching}>
                 Pesquisar

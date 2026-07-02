@@ -1,15 +1,80 @@
-import { useState } from 'react'
-import { AuthenticationPage } from '../authentication'
+import { useEffect, useState } from 'react'
+import { AuthenticationPage, useAuth } from '../authentication'
+import { VerifyEmailPage } from '../authentication/VerifyEmailPage'
 import { MainPage } from '../main/MainPage'
+import { ProfilePage } from '../profile'
+import { PrivateRoute } from './PrivateRoute'
+import { appRoutes } from './paths'
 
-type CurrentPage = 'authentication' | 'main'
+function getCurrentPath() {
+  const path = window.location.pathname || appRoutes.main
 
-export function AppRoutes() {
-  const [currentPage, setCurrentPage] = useState<CurrentPage>('authentication')
-
-  if (currentPage === 'main') {
-    return <MainPage />
+  if (path === appRoutes.authentication) {
+    return appRoutes.login
   }
 
-  return <AuthenticationPage onGuestMode={() => setCurrentPage('main')} />
+  return path
+}
+
+export function AppRoutes() {
+  const { isAuthenticated } = useAuth()
+  const [currentPath, setCurrentPath] = useState(getCurrentPath)
+  const [verificationEmail, setVerificationEmail] = useState("")
+
+  function navigate(path: string) {
+    window.history.pushState({}, "", path)
+    setCurrentPath(path)
+  }
+
+  function handleProfileClick() {
+    navigate(isAuthenticated ? appRoutes.profile : appRoutes.login)
+  }
+
+  useEffect(() => {
+    function handlePopState() {
+      setCurrentPath(getCurrentPath())
+    }
+
+    window.addEventListener("popstate", handlePopState)
+
+    return () => {
+      window.removeEventListener("popstate", handlePopState)
+    }
+  }, [currentPath])
+
+  if (currentPath === appRoutes.login || currentPath === appRoutes.authentication) {
+    return (
+      <AuthenticationPage
+        onGuestMode={() => navigate(appRoutes.main)}
+        onAuthenticated={() => navigate(appRoutes.main)}
+        onVerifyEmailRequested={(email) => {
+          setVerificationEmail(email)
+          navigate(appRoutes.verifyEmail)
+        }}
+      />
+    )
+  }
+
+  if (currentPath === appRoutes.verifyEmail) {
+    return (
+      <VerifyEmailPage
+        initialEmail={verificationEmail}
+        onBackToLogin={() => navigate(appRoutes.login)}
+        onVerified={() => navigate(appRoutes.login)}
+      />
+    )
+  }
+
+  if (currentPath === appRoutes.profile) {
+    return (
+      <PrivateRoute onBlocked={() => navigate(appRoutes.login)}>
+        <ProfilePage
+          onBackToContent={() => navigate(appRoutes.main)}
+          onLogout={() => navigate(appRoutes.login)}
+        />
+      </PrivateRoute>
+    )
+  }
+
+  return <MainPage onProfileClick={handleProfileClick} />
 }
