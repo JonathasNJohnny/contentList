@@ -1,27 +1,5 @@
+import { contentCategories, type ContentCategory } from "../content/contentApi";
 import "./Navbar.css";
-
-export type ContentCategory =
-  | "Todos"
-  | "Animes"
-  | "Mangas"
-  | "Filmes"
-  | "Séries"
-  | "Livros"
-  | "Jogos"
-  | "Podcast"
-  | "Músicas";
-
-const categories: ContentCategory[] = [
-  "Todos",
-  "Animes",
-  "Mangas",
-  "Filmes",
-  "Séries",
-  "Livros",
-  "Jogos",
-  "Podcast",
-  "Músicas",
-];
 
 type NavbarProps = {
   activeCategory: ContentCategory;
@@ -32,7 +10,7 @@ export function Navbar({ activeCategory, onCategoryChange }: NavbarProps) {
   return (
     <header className="main-navbar">
       <nav aria-label="Categorias">
-        {categories.map((category) => (
+        {contentCategories.map((category) => (
           <button
             key={category}
             type="button"

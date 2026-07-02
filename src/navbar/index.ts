@@ -1,1 +1,2 @@
-export { Navbar, type ContentCategory } from "./Navbar";
+export { Navbar } from "./Navbar";
+export type { ContentCategory } from "../content/contentApi";
