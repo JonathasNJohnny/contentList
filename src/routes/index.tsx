@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { AuthenticationPage, useAuth } from '../authentication'
 import { VerifyEmailPage } from '../authentication/VerifyEmailPage'
 import { MainPage } from '../main/MainPage'
-import { ProfilePage } from '../profile'
+import { ProfilePage, PublicProfilePage } from '../profile'
 import { PrivateRoute } from './PrivateRoute'
 import { appRoutes } from './paths'
 
@@ -71,9 +71,25 @@ export function AppRoutes() {
         <ProfilePage
           onCategoryClick={() => navigate(appRoutes.main)}
           onProfileClick={handleProfileClick}
+          onPublicProfileClick={(name) =>
+            navigate(`/profile/${encodeURIComponent(name)}`)
+          }
           onLogout={() => navigate(appRoutes.login)}
         />
       </PrivateRoute>
+    )
+  }
+
+  if (/^\/profile\/[^/]+\/?$/.test(currentPath)) {
+    return (
+      <PublicProfilePage
+        onBackToMain={() => navigate(appRoutes.main)}
+        onCategoryClick={() => navigate(appRoutes.main)}
+        onPublicProfileClick={(name) =>
+          navigate(`/profile/${encodeURIComponent(name)}`)
+        }
+        onProfileClick={handleProfileClick}
+      />
     )
   }
 

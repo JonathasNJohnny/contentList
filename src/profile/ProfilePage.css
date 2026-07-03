@@ -34,6 +34,7 @@
 
 .profile-actions {
   display: flex;
+  align-items: flex-start;
   gap: 10px;
 }
 
@@ -50,6 +51,75 @@
 
 .profile-actions .danger-action {
   color: var(--danger);
+}
+
+.user-search {
+  position: relative;
+  display: grid;
+  gap: 6px;
+  width: min(280px, 42vw);
+}
+
+.user-search label {
+  color: var(--text-h);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.user-search input {
+  width: 100%;
+  min-height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-h);
+  background: var(--surface);
+  font: inherit;
+  box-sizing: border-box;
+}
+
+.user-search input:focus {
+  outline: none;
+  border-color: var(--accent-border);
+  box-shadow: var(--focus-ring);
+}
+
+.user-search-dropdown {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 20;
+  display: grid;
+  gap: 4px;
+  width: 100%;
+  max-height: 260px;
+  overflow: auto;
+  padding: 6px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.user-search-dropdown p {
+  margin: 0;
+  padding: 8px 10px;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.user-search-dropdown button {
+  width: 100%;
+  min-height: 36px;
+  padding: 0 10px;
+  text-align: left;
+}
+
+.user-search-dropdown button:hover,
+.user-search-dropdown button:focus-visible {
+  color: var(--accent);
+  border-color: var(--accent-border);
+  background: var(--accent-bg);
 }
 
 .profile-panel {
@@ -483,6 +553,14 @@
   .profile-fields {
     width: 100%;
     grid-template-columns: 1fr;
+  }
+
+  .profile-actions {
+    display: grid;
+  }
+
+  .user-search {
+    width: 100%;
   }
 
   .profile-actions button {

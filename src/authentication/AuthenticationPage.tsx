@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from "react";
 import { loginPageText } from "../pageText/login";
+import { useLanguage } from "../pageText";
 import { useAuth } from "./authContextValue";
 import "./AuthenticationPage.css";
 
@@ -30,6 +31,7 @@ export function AuthenticationPage({
   onVerifyEmailRequested,
 }: AuthenticationPageProps) {
   const { login, register } = useAuth();
+  const { language, text: appText } = useLanguage();
   const [authMode, setAuthMode] = useState<AuthMode>("login");
   const [showPassword, setShowPassword] = useState(false);
   const [name, setName] = useState("");
@@ -38,7 +40,7 @@ export function AuthenticationPage({
   const [confirmPassword, setConfirmPassword] = useState("");
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
   const [message, setMessage] = useState("");
-  const text = loginPageText.ptBR;
+  const text = loginPageText[language];
   const isSignUp = authMode === "signUp";
   const isLoading = status === "loading";
 
@@ -47,19 +49,22 @@ export function AuthenticationPage({
     const trimmedEmail = email.trim();
 
     if ((isSignUp && !trimmedName) || !trimmedEmail || !password || (isSignUp && !confirmPassword)) {
-      return "Preencha todos os campos.";
+      return appText.auth.requiredFields;
     }
 
     if (!emailPattern.test(trimmedEmail)) {
-      return "Informe um email valido.";
+      return appText.auth.invalidEmail;
     }
 
     if (password.length < minimumPasswordLength) {
-      return `A senha deve ter no minimo ${minimumPasswordLength} caracteres.`;
+      return appText.auth.shortPassword.replace(
+        "{min}",
+        minimumPasswordLength.toString(),
+      );
     }
 
     if (isSignUp && password !== confirmPassword) {
-      return "Senha e confirmar senha precisam ser iguais.";
+      return appText.auth.passwordMismatch;
     }
 
     return "";
@@ -77,7 +82,7 @@ export function AuthenticationPage({
     }
 
     setStatus("loading");
-    setMessage(isSignUp ? "Criando cadastro..." : "Entrando...");
+    setMessage(isSignUp ? appText.auth.signingUp : appText.auth.signingIn);
 
     try {
       if (isSignUp) {
@@ -87,7 +92,7 @@ export function AuthenticationPage({
           password,
         });
         setStatus("success");
-        setMessage("Cadastro criado. O codigo foi enviado para seu email.");
+        setMessage(appText.auth.accountCreated);
         window.setTimeout(() => onVerifyEmailRequested(email.trim()), 900);
         return;
       }
@@ -97,14 +102,14 @@ export function AuthenticationPage({
         password,
       });
       setStatus("success");
-      setMessage("Login realizado com sucesso.");
+      setMessage(appText.auth.loginSuccess);
       window.setTimeout(onAuthenticated, 500);
     } catch (error) {
       setStatus("error");
       setMessage(
         error instanceof Error
           ? error.message
-          : "Nao foi possivel autenticar agora.",
+          : appText.auth.authError,
       );
     }
   }
@@ -218,8 +223,8 @@ export function AuthenticationPage({
             <button type="submit" className="primary-action" disabled={isLoading}>
               {isLoading
                 ? isSignUp
-                  ? "Cadastrando..."
-                  : "Entrando..."
+                  ? appText.auth.signingUpButton
+                  : appText.auth.signingInButton
                 : isSignUp
                   ? text.signUpButton
                   : text.loginButton}
@@ -230,7 +235,7 @@ export function AuthenticationPage({
               onClick={handleModeChange}
               disabled={isLoading}
             >
-              {isSignUp ? "Entrar" : "Cadastrar"}
+              {isSignUp ? appText.auth.enter : appText.auth.register}
             </button>
           </div>
         </form>
@@ -241,7 +246,7 @@ export function AuthenticationPage({
           onClick={onGuestMode}
           disabled={isLoading}
         >
-          Guest mode
+          {appText.auth.guestMode}
         </button>
 
         <button

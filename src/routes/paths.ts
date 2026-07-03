@@ -3,5 +3,6 @@ export const appRoutes = {
   authentication: "/authentication",
   verifyEmail: "/verify-email",
   profile: "/profile",
+  publicProfile: "/profile/:name",
   main: "/",
 } as const;

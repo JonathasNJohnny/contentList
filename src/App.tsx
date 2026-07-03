@@ -1,11 +1,14 @@
 import { AppRoutes } from './routes'
 import { AuthProvider } from './authentication/AuthContext'
+import { LanguageProvider } from './pageText'
 
 function App() {
   return (
-    <AuthProvider>
-      <AppRoutes />
-    </AuthProvider>
+    <LanguageProvider>
+      <AuthProvider>
+        <AppRoutes />
+      </AuthProvider>
+    </LanguageProvider>
   )
 }
 

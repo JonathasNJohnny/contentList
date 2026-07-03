@@ -1,9 +1,9 @@
 import {
   contentCategories,
-  contentCategoryLabels,
   type ContentCategory,
 } from "../content/contentApi";
 import { useState } from "react";
+import { useLanguage } from "../pageText";
 import "./Navbar.css";
 
 type NavbarProps = {
@@ -18,6 +18,7 @@ export function Navbar({
   onProfileClick,
 }: NavbarProps) {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { language, text, toggleLanguage } = useLanguage();
 
   function handleCategoryClick(category: ContentCategory) {
     onCategoryChange(category);
@@ -28,20 +29,23 @@ export function Navbar({
     <header className="main-navbar">
       <nav
         className={isMenuOpen ? "is-open" : undefined}
-        aria-label="Categorias"
+        aria-label={text.navbar.ariaLabel}
       >
         <div className="navbar-top">
           <img
             className="profile-picture"
             src="https://www.transparentpng.com/thumb/circle/PbI15B-circle-transparent-background.png"
-            alt="Foto de perfil"
+            alt={text.navbar.profileAlt}
+            title={text.navbar.profileTitle}
             onClick={onProfileClick}
           />
 
           <button
             type="button"
             className="menu-toggle"
-            aria-label={isMenuOpen ? "Fechar menu" : "Abrir menu"}
+            aria-label={
+              isMenuOpen ? text.navbar.closeMenu : text.navbar.openMenu
+            }
             aria-expanded={isMenuOpen}
             onClick={() => setIsMenuOpen((current) => !current)}
           >
@@ -61,10 +65,21 @@ export function Navbar({
                 className={category === activeCategory ? "active" : undefined}
                 onClick={() => handleCategoryClick(category)}
               >
-                {contentCategoryLabels[category]}
+                {text.categories[category]}
               </button>
             ))}
         </div>
+
+        <button
+          type="button"
+          className="language-toggle"
+          aria-label={text.language.toggleLabel}
+          title={text.language.toggleLabel}
+          onClick={toggleLanguage}
+        >
+          <span aria-hidden="true">{language === "ptBR" ? "BR" : "US"}</span>
+          {language === "ptBR" ? "PT" : "EN"}
+        </button>
       </nav>
     </header>
   );

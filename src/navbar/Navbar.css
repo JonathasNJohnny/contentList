@@ -40,6 +40,20 @@
   scrollbar-width: thin;
 }
 
+.language-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border-color: var(--border) !important;
+  background: var(--surface-soft) !important;
+}
+
+.language-toggle span {
+  color: var(--text-h);
+  font-weight: 700;
+}
+
 .main-navbar button {
   flex: 0 0 auto;
   min-height: 38px;
@@ -122,6 +136,12 @@
 
   .main-navbar nav.is-open .category-menu {
     display: grid;
+  }
+
+  .language-toggle {
+    position: absolute;
+    right: 54px;
+    top: 9px;
   }
 
   .category-menu button {

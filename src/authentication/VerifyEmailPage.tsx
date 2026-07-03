@@ -1,4 +1,5 @@
 import { useMemo, useState, type FormEvent } from "react";
+import { useLanguage } from "../pageText";
 import { useAuth } from "./authContextValue";
 import "./AuthenticationPage.css";
 
@@ -14,6 +15,7 @@ export function VerifyEmailPage({
   onBackToLogin,
 }: VerifyEmailPageProps) {
   const { verifyEmail } = useAuth();
+  const { text } = useLanguage();
   const [email, setEmail] = useState(initialEmail);
   const [code, setCode] = useState("");
   const [status, setStatus] = useState<"idle" | "loading" | "success" | "error">("idle");
@@ -29,12 +31,12 @@ export function VerifyEmailPage({
 
     if (!canSubmit) {
       setStatus("error");
-      setMessage("Informe o email e o codigo de verificacao.");
+      setMessage(text.verifyEmail.required);
       return;
     }
 
     setStatus("loading");
-    setMessage("Verificando codigo...");
+    setMessage(text.verifyEmail.checking);
 
     try {
       await verifyEmail({
@@ -42,14 +44,14 @@ export function VerifyEmailPage({
         code: code.trim(),
       });
       setStatus("success");
-      setMessage("Email verificado com sucesso. Voce ja pode fazer login.");
+      setMessage(text.verifyEmail.success);
       window.setTimeout(onVerified, 900);
     } catch (error) {
       setStatus("error");
       setMessage(
         error instanceof Error
           ? error.message
-          : "Nao foi possivel verificar o email agora.",
+          : text.verifyEmail.error,
       );
     }
   }
@@ -58,30 +60,30 @@ export function VerifyEmailPage({
     <main className="auth-page">
       <section className="auth-card" aria-labelledby="verify-email-title">
         <div className="auth-heading">
-          <h1 id="verify-email-title">Verificar email</h1>
-          <p>Digite o codigo enviado para seu email.</p>
+          <h1 id="verify-email-title">{text.verifyEmail.title}</h1>
+          <p>{text.verifyEmail.description}</p>
         </div>
 
         <form className="auth-form" onSubmit={handleSubmit}>
           <label>
-            <span>E-mail</span>
+            <span>{text.verifyEmail.emailLabel}</span>
             <input
               type="email"
               value={email}
               onChange={(event) => setEmail(event.target.value)}
-              placeholder="voce@exemplo.com"
+              placeholder={text.verifyEmail.emailPlaceholder}
               autoComplete="email"
               disabled={status === "loading"}
             />
           </label>
 
           <label>
-            <span>Codigo de verificacao</span>
+            <span>{text.verifyEmail.codeLabel}</span>
             <input
               type="text"
               value={code}
               onChange={(event) => setCode(event.target.value)}
-              placeholder="Digite o codigo"
+              placeholder={text.verifyEmail.codePlaceholder}
               autoComplete="one-time-code"
               disabled={status === "loading"}
             />
@@ -99,13 +101,15 @@ export function VerifyEmailPage({
               className="primary-action"
               disabled={status === "loading"}
             >
-              {status === "loading" ? "Verificando..." : "Verificar"}
+              {status === "loading"
+                ? text.verifyEmail.checkingButton
+                : text.verifyEmail.submit}
             </button>
           </div>
         </form>
 
         <button type="button" className="mode-link" onClick={onBackToLogin}>
-          Voltar para login
+          {text.verifyEmail.backToLogin}
         </button>
       </section>
     </main>

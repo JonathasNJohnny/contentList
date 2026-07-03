@@ -1,17 +1,12 @@
-import {
-  contentCategories,
-  contentCategoryLabels,
-  type ContentCategory,
-} from "../content/contentApi";
+import { contentCategories, type ContentCategory } from "../content/contentApi";
 import { useAuth } from "../authentication/authContextValue";
 import "./ProfilePage.css";
-import { useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Icon } from "@iconify/react";
-import { updateName } from "./pfpApi";
+import { getOtherUsers, getUserProfileByName, updateName } from "./pfpApi";
 import {
   getContentTypeFromCategory,
   getFavorites,
-  getMomentLabel,
   removeFavorite,
   updateFavorite,
   type Favorite,
@@ -20,46 +15,56 @@ import {
 } from "../features/favorites";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Navbar } from "../navbar";
+import { useLanguage } from "../pageText";
+
+type AppText = ReturnType<typeof useLanguage>["text"];
 
 type ProfilePageProps = {
   onLogout: () => void;
   onCategoryClick: (category: ContentCategory) => void;
   onProfileClick: () => void;
+  onPublicProfileClick: (name: string) => void;
 };
 
 const favoriteCategories = contentCategories.filter(
   (category) => !["Para Voce", "NULL"].includes(category),
 );
 
-function getStatusLabels(contentType: string): Record<FavoriteStatus, string> {
+function getStatusLabels(
+  contentType: string,
+  text: AppText,
+): Record<FavoriteStatus, string> {
   if (contentType === "game") {
     return {
-      watch: "Quero jogar",
-      watching: "Jogando",
-      watched: "Jogados",
+      watch: text.profile.status.gameWatch,
+      watching: text.profile.status.gameWatching,
+      watched: text.profile.status.gameWatched,
     };
   }
 
   if (contentType === "book" || contentType === "manga") {
     return {
-      watch: "Quero ler",
-      watching: "Lendo",
-      watched: "Lidos",
+      watch: text.profile.status.readWatch,
+      watching: text.profile.status.readWatching,
+      watched: text.profile.status.readWatched,
     };
   }
 
   return {
-    watch: "Quero assistir",
-    watching: "Assistindo",
-    watched: "Assistidos",
+    watch: text.profile.status.watch,
+    watching: text.profile.status.watching,
+    watched: text.profile.status.watched,
   };
 }
 
-function getStatusFilterOptions(contentType: string): Array<{
+function getStatusFilterOptions(
+  contentType: string,
+  text: AppText,
+): Array<{
   value: FavoriteStatus;
   label: string;
 }> {
-  const labels = getStatusLabels(contentType);
+  const labels = getStatusLabels(contentType, text);
 
   return [
     { value: "watched", label: labels.watched },
@@ -70,6 +75,24 @@ function getStatusFilterOptions(contentType: string): Array<{
 
 function getCategoryContentType(category: ContentCategory) {
   return getContentTypeFromCategory(category) ?? "";
+}
+
+function getContentTypeLabel(contentType: string, text: AppText) {
+  const labels = text.profile.contentTypes as Record<string, string>;
+
+  return labels[contentType] ?? (contentType || "-");
+}
+
+function getProfileMomentLabel(contentType: string, text: AppText) {
+  if (contentType === "anime" || contentType === "series") {
+    return text.profile.moment.episode;
+  }
+
+  if (contentType === "manga" || contentType === "book") {
+    return text.profile.moment.chapter;
+  }
+
+  return null;
 }
 
 function formatDateForInput(date?: string) {
@@ -84,26 +107,32 @@ function truncateText(value = "", maxLength = 20) {
   return `${value.slice(0, maxLength)}...`;
 }
 
-function formatPeriod(startDate?: string, endDate?: string) {
+function formatPeriod(
+  startDate: string | undefined,
+  endDate: string | undefined,
+  text: AppText,
+) {
   const start = formatDateForInput(startDate);
   const end = formatDateForInput(endDate);
 
   if (!start && !end) {
-    return "Sem datas";
+    return text.profile.noDates;
   }
 
-  return `${start || "Sem inicio"} - ${end || "Sem termino"}`;
+  return `${start || text.profile.noStart} - ${end || text.profile.noEnd}`;
 }
 
 function FavoriteCard({
   favorite,
   onClick,
+  text,
 }: {
   favorite: Favorite;
   onClick: (favorite: Favorite) => void;
+  text: AppText;
 }) {
-  const momentLabel = getMomentLabel(favorite.contentType);
-  const statusLabels = getStatusLabels(favorite.contentType);
+  const momentLabel = getProfileMomentLabel(favorite.contentType, text);
+  const statusLabels = getStatusLabels(favorite.contentType, text);
 
   return (
     <button
@@ -115,7 +144,7 @@ function FavoriteCard({
         {favorite.photoUrl ? (
           <img src={favorite.photoUrl} alt={favorite.name} loading="lazy" />
         ) : (
-          <span>Sem imagem</span>
+          <span>{text.profile.noImage}</span>
         )}
       </div>
 
@@ -123,16 +152,20 @@ function FavoriteCard({
         <h4>{favorite.name}</h4>
         <dl>
           <div>
-            <dt>Status</dt>
+            <dt>{text.profile.typeLabel}</dt>
+            <dd>{getContentTypeLabel(favorite.contentType, text)}</dd>
+          </div>
+          <div>
+            <dt>{text.profile.statusLabel}</dt>
             <dd>{statusLabels[favorite.status]}</dd>
           </div>
           <div>
-            <dt>Nota</dt>
+            <dt>{text.profile.ratingLabel}</dt>
             <dd>{favorite.userRating ?? "-"}</dd>
           </div>
           <div>
-            <dt>Periodo</dt>
-            <dd>{formatPeriod(favorite.startDate, favorite.endDate)}</dd>
+            <dt>{text.profile.periodLabel}</dt>
+            <dd>{formatPeriod(favorite.startDate, favorite.endDate, text)}</dd>
           </div>
           {momentLabel && (
             <div>
@@ -141,7 +174,7 @@ function FavoriteCard({
             </div>
           )}
         </dl>
-        <p>{truncateText(favorite.comment || "Sem comentario")}</p>
+        <p>{truncateText(favorite.comment || text.profile.noComment)}</p>
       </div>
     </button>
   );
@@ -150,15 +183,19 @@ function FavoriteCard({
 function FavoriteDetailsModal({
   favorite,
   isSaving,
+  isReadOnly = false,
   onClose,
   onRemove,
   onUpdate,
+  text,
 }: {
   favorite: Favorite;
   isSaving: boolean;
+  isReadOnly?: boolean;
   onClose: () => void;
-  onRemove: (contentId: string) => void;
-  onUpdate: (contentId: string, input: UpdateFavoriteInput) => void;
+  onRemove?: (contentId: string) => void;
+  onUpdate?: (contentId: string, input: UpdateFavoriteInput) => void;
+  text: AppText;
 }) {
   const [status, setStatus] = useState<FavoriteStatus>(favorite.status);
   const [userRating, setUserRating] = useState(
@@ -170,10 +207,14 @@ function FavoriteDetailsModal({
   );
   const [endDate, setEndDate] = useState(formatDateForInput(favorite.endDate));
   const [moment, setMoment] = useState(favorite.moment?.toString() ?? "");
-  const momentLabel = getMomentLabel(favorite.contentType);
-  const statusLabels = getStatusLabels(favorite.contentType);
+  const momentLabel = getProfileMomentLabel(favorite.contentType, text);
+  const statusLabels = getStatusLabels(favorite.contentType, text);
 
   function handleSave() {
+    if (!onUpdate || isReadOnly) {
+      return;
+    }
+
     onUpdate(favorite.contentId, {
       status,
       userRating: userRating === "" ? undefined : Number(userRating),
@@ -196,7 +237,7 @@ function FavoriteDetailsModal({
             <p>{statusLabels[favorite.status]}</p>
           </div>
           <button type="button" onClick={onClose} disabled={isSaving}>
-            Fechar
+            {text.profile.close}
           </button>
         </div>
 
@@ -205,20 +246,20 @@ function FavoriteDetailsModal({
             {favorite.photoUrl ? (
               <img src={favorite.photoUrl} alt={favorite.name} />
             ) : (
-              <span>Sem imagem</span>
+              <span>{text.profile.noImage}</span>
             )}
           </div>
         </div>
 
         <div className="favorite-controls">
           <label>
-            <span>Status</span>
+            <span>{text.profile.statusLabel}</span>
             <select
               value={status}
               onChange={(event) =>
                 setStatus(event.target.value as FavoriteStatus)
               }
-              disabled={isSaving}
+              disabled={isSaving || isReadOnly}
             >
               {Object.entries(statusLabels).map(([value, label]) => (
                 <option key={value} value={value}>
@@ -229,7 +270,7 @@ function FavoriteDetailsModal({
           </label>
 
           <label>
-            <span>Nota</span>
+            <span>{text.profile.ratingLabel}</span>
             <input
               type="number"
               min="1"
@@ -237,27 +278,27 @@ function FavoriteDetailsModal({
               step="1"
               value={userRating}
               onChange={(event) => setUserRating(event.target.value)}
-              disabled={isSaving}
+              disabled={isSaving || isReadOnly}
             />
           </label>
 
           <label>
-            <span>Inicio</span>
+            <span>{text.profile.startLabel}</span>
             <input
               type="date"
               value={startDate}
               onChange={(event) => setStartDate(event.target.value)}
-              disabled={isSaving}
+              disabled={isSaving || isReadOnly}
             />
           </label>
 
           <label>
-            <span>Termino</span>
+            <span>{text.profile.endLabel}</span>
             <input
               type="date"
               value={endDate}
               onChange={(event) => setEndDate(event.target.value)}
-              disabled={isSaving}
+              disabled={isSaving || isReadOnly}
             />
           </label>
 
@@ -269,35 +310,233 @@ function FavoriteDetailsModal({
                 min="0"
                 value={moment}
                 onChange={(event) => setMoment(event.target.value)}
-                disabled={isSaving}
+                disabled={isSaving || isReadOnly}
               />
             </label>
           )}
         </div>
 
         <label className="favorite-comment">
-          <span>Comentario</span>
+          <span>{text.profile.commentLabel}</span>
           <textarea
             value={comment}
             onChange={(event) => setComment(event.target.value)}
-            disabled={isSaving}
+            disabled={isSaving || isReadOnly}
           />
         </label>
 
-        <div className="favorite-actions">
-          <button type="button" onClick={handleSave} disabled={isSaving}>
-            Salvar
-          </button>
-          <button
-            type="button"
-            className="danger-action"
-            onClick={() => onRemove(favorite.contentId)}
-            disabled={isSaving}
-          >
-            Remover
-          </button>
-        </div>
+        {!isReadOnly && (
+          <div className="favorite-actions">
+            <button type="button" onClick={handleSave} disabled={isSaving}>
+              {text.profile.save}
+            </button>
+            <button
+              type="button"
+              className="danger-action"
+              onClick={() => onRemove?.(favorite.contentId)}
+              disabled={isSaving}
+            >
+              {text.profile.remove}
+            </button>
+          </div>
+        )}
       </section>
+    </div>
+  );
+}
+
+function useParams() {
+  const match = window.location.pathname.match(/^\/profile\/([^/]+)\/?$/);
+
+  return {
+    name: match?.[1] ? decodeURIComponent(match[1]) : undefined,
+  };
+}
+
+type FavoriteSectionsProps = {
+  favorites: Favorite[];
+  selectedFavoriteId: string | null;
+  statusFilters: Partial<Record<ContentCategory, FavoriteStatus>>;
+  text: AppText;
+  onFavoriteClick: (favorite: Favorite) => void;
+  onStatusFilterChange: (
+    category: ContentCategory,
+    status: FavoriteStatus,
+  ) => void;
+};
+
+function FavoriteSections({
+  favorites,
+  selectedFavoriteId,
+  statusFilters,
+  text,
+  onFavoriteClick,
+  onStatusFilterChange,
+}: FavoriteSectionsProps) {
+  return (
+    <div
+      className="favorites-list"
+      data-selected-favorite={selectedFavoriteId ?? ""}
+    >
+      {favoriteCategories.map((category) => {
+        const activeStatus = statusFilters[category] ?? "watching";
+        const categoryContentType = getCategoryContentType(category);
+        const categoryStatusLabels = getStatusLabels(categoryContentType, text);
+        const categoryStatusOptions = getStatusFilterOptions(
+          categoryContentType,
+          text,
+        );
+        const categoryFavorites = favorites.filter(
+          (favorite) => favorite.contentType === categoryContentType,
+        );
+        const filteredFavorites = categoryFavorites.filter(
+          (favorite) => favorite.status === activeStatus,
+        );
+
+        return (
+          <section className="favorite-category" key={category}>
+            <div className="favorite-category-heading">
+              <h3>{text.categories[category]}</h3>
+              <div className="favorite-status-tabs">
+                {categoryStatusOptions.map((option) => (
+                  <button
+                    type="button"
+                    className={
+                      activeStatus === option.value ? "active" : undefined
+                    }
+                    key={option.value}
+                    onClick={() => onStatusFilterChange(category, option.value)}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {filteredFavorites.length > 0 ? (
+              <div className="favorite-card-grid">
+                {filteredFavorites.map((favorite) => (
+                  <FavoriteCard
+                    favorite={favorite}
+                    key={favorite.contentId}
+                    onClick={onFavoriteClick}
+                    text={text}
+                  />
+                ))}
+              </div>
+            ) : (
+              <p className="profile-empty">
+                {text.profile.noFavoritesInStatus.replace(
+                  "{status}",
+                  categoryStatusLabels[activeStatus].toLowerCase(),
+                )}
+              </p>
+            )}
+          </section>
+        );
+      })}
+    </div>
+  );
+}
+
+type UserSearchProps = {
+  currentUserName?: string;
+  onUserClick: (name: string) => void;
+  text: AppText;
+};
+
+function UserSearch({ currentUserName, onUserClick, text }: UserSearchProps) {
+  const userSearchRef = useRef<HTMLDivElement | null>(null);
+  const [userSearch, setUserSearch] = useState("");
+  const [isUserSearchOpen, setIsUserSearchOpen] = useState(false);
+  const {
+    data: otherUsers = [],
+    isPending: isLoadingUsers,
+    isError: isUsersError,
+  } = useQuery({
+    queryKey: ["other-users"],
+    queryFn: getOtherUsers,
+    refetchOnWindowFocus: false,
+  });
+  const trimmedUserSearch = userSearch.trim().toLowerCase();
+  const filteredUsers = useMemo(
+    () =>
+      otherUsers.filter((otherUser) => {
+        const isCurrentUser = otherUser.name === currentUserName;
+
+        return (
+          !isCurrentUser &&
+          trimmedUserSearch.length > 0 &&
+          otherUser.name.toLowerCase().includes(trimmedUserSearch)
+        );
+      }),
+    [currentUserName, otherUsers, trimmedUserSearch],
+  );
+
+  useEffect(() => {
+    function handlePointerDown(event: PointerEvent) {
+      if (
+        userSearchRef.current &&
+        !userSearchRef.current.contains(event.target as Node)
+      ) {
+        setIsUserSearchOpen(false);
+      }
+    }
+
+    document.addEventListener("pointerdown", handlePointerDown);
+
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+    };
+  }, []);
+
+  function handleUserClick(name: string) {
+    setUserSearch("");
+    setIsUserSearchOpen(false);
+    onUserClick(name);
+  }
+
+  return (
+    <div className="user-search" ref={userSearchRef}>
+      <input
+        aria-label={text.profile.searchUsersLabel}
+        type="search"
+        value={userSearch}
+        onChange={(event) => {
+          setUserSearch(event.target.value);
+          setIsUserSearchOpen(true);
+        }}
+        onFocus={() => setIsUserSearchOpen(true)}
+        placeholder={text.profile.searchUsersPlaceholder}
+        autoComplete="off"
+      />
+      {isUserSearchOpen && (
+        <div className="user-search-dropdown" role="listbox">
+          {userSearch.trim().length === 0 && (
+            <p>{text.profile.emptyUserSearch}</p>
+          )}
+          {userSearch.trim().length > 0 && isLoadingUsers && (
+            <p>{text.profile.usersLoading}</p>
+          )}
+          {userSearch.trim().length > 0 && isUsersError && (
+            <p>{text.profile.usersError}</p>
+          )}
+          {userSearch.trim().length > 0 &&
+            !isLoadingUsers &&
+            !isUsersError &&
+            filteredUsers.length === 0 && <p>{text.profile.noUsersFound}</p>}
+          {filteredUsers.map((otherUser) => (
+            <button
+              type="button"
+              role="option"
+              key={otherUser.name}
+              onClick={() => handleUserClick(otherUser.name)}
+            >
+              {otherUser.name}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -305,9 +544,11 @@ function FavoriteDetailsModal({
 export function ProfilePage({
   onCategoryClick,
   onLogout,
+  onPublicProfileClick,
   onProfileClick,
 }: ProfilePageProps) {
   const { user, token, logout, loadUser } = useAuth();
+  const { text } = useLanguage();
   const queryClient = useQueryClient();
 
   const [isEditingName, setIsEditingName] = useState<boolean>(false);
@@ -348,7 +589,7 @@ export function ProfilePage({
       input: UpdateFavoriteInput;
     }) => {
       if (!token) {
-        throw new Error("Sessao expirada. Faca login novamente.");
+        throw new Error(text.profile.sessionExpired);
       }
 
       return updateFavorite(token, contentId, input);
@@ -356,12 +597,14 @@ export function ProfilePage({
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: favoritesQueryKey });
       setSelectedFavoriteId(null);
-      setFavoritesFeedback("Favorito atualizado.");
+      setFavoritesFeedback(text.profile.favoriteUpdated);
       setFavoritesFeedbackType("success");
     },
     onError: (error) => {
       setFavoritesFeedback(
-        error instanceof Error ? error.message : "Erro ao atualizar favorito.",
+        error instanceof Error
+          ? error.message
+          : text.profile.updateFavoriteError,
       );
       setFavoritesFeedbackType("error");
     },
@@ -369,7 +612,7 @@ export function ProfilePage({
   const removeFavoriteMutation = useMutation({
     mutationFn: (contentId: string) => {
       if (!token) {
-        throw new Error("Sessao expirada. Faca login novamente.");
+        throw new Error(text.profile.sessionExpired);
       }
 
       return removeFavorite(token, contentId);
@@ -377,12 +620,14 @@ export function ProfilePage({
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: favoritesQueryKey });
       setSelectedFavoriteId(null);
-      setFavoritesFeedback("Favorito removido.");
+      setFavoritesFeedback(text.profile.favoriteRemoved);
       setFavoritesFeedbackType("success");
     },
     onError: (error) => {
       setFavoritesFeedback(
-        error instanceof Error ? error.message : "Erro ao remover favorito.",
+        error instanceof Error
+          ? error.message
+          : text.profile.removeFavoriteError,
       );
       setFavoritesFeedbackType("error");
     },
@@ -402,13 +647,13 @@ export function ProfilePage({
     const trimmedName = nameInput.trim();
 
     if (trimmedName.length < 2) {
-      setNameFeedback("Informe um nome com pelo menos 2 caracteres.");
+      setNameFeedback(text.profile.nameTooShort);
       setNameFeedbackType("error");
       return;
     }
 
     if (!token) {
-      setNameFeedback("Sessao expirada. Faca login novamente.");
+      setNameFeedback(text.profile.sessionExpired);
       setNameFeedbackType("error");
       return;
     }
@@ -433,13 +678,11 @@ export function ProfilePage({
       setNameInput(updatedUser.name);
       await loadUser();
       setIsEditingName(false);
-      setNameFeedback("Nome atualizado com sucesso.");
+      setNameFeedback(text.profile.nameUpdated);
       setNameFeedbackType("success");
     } catch (error) {
       setNameFeedback(
-        error instanceof Error
-          ? error.message
-          : "Nao foi possivel atualizar o nome agora.",
+        error instanceof Error ? error.message : text.profile.nameUpdateError,
       );
       setNameFeedbackType("error");
     } finally {
@@ -480,26 +723,24 @@ export function ProfilePage({
       <section className="profile-shell" aria-labelledby="profile-title">
         <div className="profile-heading">
           <div>
-            <h1 id="profile-title">Perfil</h1>
-            <p>{user?.name ?? "Usuario"}</p>
+            <h1 id="profile-title">{text.profile.title}</h1>
+            <p>{user?.name ?? text.profile.userFallback}</p>
           </div>
 
           <div className="profile-actions">
-            <button
-              type="button"
-              className="danger-action"
-              onClick={handleLogout}
-            >
-              Sair
-            </button>
+            <UserSearch
+              currentUserName={user?.name}
+              onUserClick={onPublicProfileClick}
+              text={text}
+            />
           </div>
         </div>
 
         <section className="profile-panel" aria-labelledby="profile-data-title">
-          <h2 id="profile-data-title">Dados da conta</h2>
+          <h2 id="profile-data-title">{text.profile.accountData}</h2>
           <div className="profile-fields">
             <label>
-              <span>Nome</span>
+              <span>{text.profile.nameLabel}</span>
               <div className="name-field">
                 <input
                   value={isEditingName ? nameInput : (user?.name ?? "")}
@@ -512,8 +753,8 @@ export function ProfilePage({
                     type="button"
                     onClick={handleSaveName}
                     disabled={isSavingName}
-                    aria-label="Salvar nome"
-                    title="Salvar nome"
+                    aria-label={text.profile.saveName}
+                    title={text.profile.saveName}
                   >
                     <Icon
                       className={`edit-icon ${isSavingName ? "is-loading" : ""}`}
@@ -531,8 +772,8 @@ export function ProfilePage({
                       setNameFeedbackType(null);
                       setIsEditingName(true);
                     }}
-                    aria-label="Editar nome"
-                    title="Editar nome"
+                    aria-label={text.profile.editName}
+                    title={text.profile.editName}
                   >
                     <Icon className="edit-icon" icon="mdi:pencil" />
                   </button>
@@ -549,92 +790,40 @@ export function ProfilePage({
               {nameFeedback}
             </p>
           )}
-          <p className="pending-note">
-            Alteracao de nome e email ficara disponivel quando a rota do backend
-            estiver pronta.
-          </p>
         </section>
 
         <section className="profile-panel" aria-labelledby="favorites-title">
-          <h2 id="favorites-title">Favoritos</h2>
+          <h2 id="favorites-title">{text.profile.favorites}</h2>
           {favoritesFeedback && (
             <p className={`profile-feedback ${favoritesFeedbackType ?? ""}`}>
               {favoritesFeedback}
             </p>
           )}
           {isLoadingFavorites && (
-            <p className="profile-empty">Carregando favoritos...</p>
+            <p className="profile-empty">{text.profile.loadingFavorites}</p>
           )}
           {isFavoritesError && (
             <p className="profile-feedback error">
               {favoritesError instanceof Error
                 ? favoritesError.message
-                : "Erro ao carregar favoritos."}
+                : text.profile.favoritesError}
             </p>
           )}
           {!isLoadingFavorites &&
             !isFavoritesError &&
             favorites.length === 0 && (
-              <p className="profile-empty">Nenhum favorito adicionado ainda.</p>
+              <p className="profile-empty">{text.profile.noFavorites}</p>
             )}
-          <div className="favorites-list">
-            {favoriteCategories.map((category) => {
-              const activeStatus = statusFilters[category] ?? "watched";
-              const categoryContentType = getCategoryContentType(category);
-              const categoryStatusLabels = getStatusLabels(categoryContentType);
-              const categoryStatusOptions =
-                getStatusFilterOptions(categoryContentType);
-              const categoryFavorites = favorites.filter(
-                (favorite) => favorite.contentType === categoryContentType,
-              );
-              const filteredFavorites = categoryFavorites.filter(
-                (favorite) => favorite.status === activeStatus,
-              );
-
-              return (
-                <section className="favorite-category" key={category}>
-                  <div className="favorite-category-heading">
-                    <h3>{contentCategoryLabels[category]}</h3>
-                    <div className="favorite-status-tabs">
-                      {categoryStatusOptions.map((option) => (
-                        <button
-                          type="button"
-                          className={
-                            activeStatus === option.value ? "active" : undefined
-                          }
-                          key={option.value}
-                          onClick={() =>
-                            handleStatusFilterChange(category, option.value)
-                          }
-                        >
-                          {option.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {filteredFavorites.length > 0 ? (
-                    <div className="favorite-card-grid">
-                      {filteredFavorites.map((favorite) => (
-                        <FavoriteCard
-                          favorite={favorite}
-                          key={favorite.contentId}
-                          onClick={(currentFavorite) =>
-                            setSelectedFavoriteId(currentFavorite.contentId)
-                          }
-                        />
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="profile-empty">
-                      Sem favoritos em{" "}
-                      {categoryStatusLabels[activeStatus].toLowerCase()}.
-                    </p>
-                  )}
-                </section>
-              );
-            })}
-          </div>
+          <FavoriteSections
+            favorites={favorites}
+            selectedFavoriteId={selectedFavoriteId}
+            statusFilters={statusFilters}
+            text={text}
+            onFavoriteClick={(currentFavorite) =>
+              setSelectedFavoriteId(currentFavorite.contentId)
+            }
+            onStatusFilterChange={handleStatusFilterChange}
+          />
         </section>
       </section>
 
@@ -646,6 +835,163 @@ export function ProfilePage({
           onClose={() => setSelectedFavoriteId(null)}
           onRemove={handleRemoveFavorite}
           onUpdate={handleUpdateFavorite}
+          text={text}
+        />
+      )}
+      <button type="button" className="danger-action" onClick={handleLogout}>
+        {text.profile.logout}
+      </button>
+    </main>
+  );
+}
+
+type PublicProfilePageProps = {
+  onBackToMain: () => void;
+  onCategoryClick: (category: ContentCategory) => void;
+  onPublicProfileClick: (name: string) => void;
+  onProfileClick: () => void;
+};
+
+export function PublicProfilePage({
+  onBackToMain,
+  onCategoryClick,
+  onPublicProfileClick,
+  onProfileClick,
+}: PublicProfilePageProps) {
+  const { name } = useParams();
+  const { user } = useAuth();
+  const { text } = useLanguage();
+  const [selectedFavoriteId, setSelectedFavoriteId] = useState<string | null>(
+    null,
+  );
+  const [statusFilters, setStatusFilters] = useState<
+    Partial<Record<ContentCategory, FavoriteStatus>>
+  >({});
+  const trimmedName = name?.trim() ?? "";
+
+  const {
+    data: profile,
+    isPending,
+    isError,
+    error,
+  } = useQuery({
+    queryKey: ["public-profile", trimmedName],
+    queryFn: () => getUserProfileByName(trimmedName),
+    enabled: trimmedName.length > 0,
+    refetchOnWindowFocus: false,
+    retry: false,
+  });
+
+  const favorites = profile?.favorites ?? [];
+  const selectedFavorite =
+    favorites.find((favorite) => favorite.contentId === selectedFavoriteId) ??
+    null;
+  const isLoadingProfile = trimmedName.length > 0 && isPending;
+  const errorMessage =
+    error instanceof Error ? error.message.toLowerCase() : "";
+  const isNotFound =
+    trimmedName.length === 0 ||
+    (isError &&
+      (errorMessage.includes("nao encontrado") ||
+        errorMessage.includes("não encontrado") ||
+        errorMessage.includes("not found")));
+
+  function handleStatusFilterChange(
+    category: ContentCategory,
+    status: FavoriteStatus,
+  ) {
+    setStatusFilters((current) => ({
+      ...current,
+      [category]: status,
+    }));
+  }
+
+  return (
+    <main className="profile-page">
+      <Navbar
+        activeCategory="NULL"
+        onCategoryChange={onCategoryClick}
+        onProfileClick={onProfileClick}
+      />
+
+      <section className="profile-shell" aria-labelledby="public-profile-title">
+        <div className="profile-heading">
+          <div>
+            <h1 id="public-profile-title">{text.profile.publicTitle}</h1>
+            <p>{profile?.name ?? (trimmedName || text.profile.userFallback)}</p>
+          </div>
+
+          <div className="profile-actions">
+            <UserSearch
+              currentUserName={user?.name}
+              onUserClick={onPublicProfileClick}
+              text={text}
+            />
+            <button type="button" onClick={onBackToMain}>
+              {text.profile.back}
+            </button>
+          </div>
+        </div>
+
+        <section className="profile-panel" aria-labelledby="public-data-title">
+          <h2 id="public-data-title">{text.profile.publicData}</h2>
+          {isLoadingProfile && (
+            <p className="profile-empty">{text.profile.loadingProfile}</p>
+          )}
+          {isNotFound && (
+            <p className="profile-feedback error">
+              {text.profile.userNotFound}
+            </p>
+          )}
+          {isError && !isNotFound && (
+            <p className="profile-feedback error">
+              {error instanceof Error
+                ? error.message
+                : text.profile.fetchProfileError}
+            </p>
+          )}
+          {!isLoadingProfile && !isError && profile && (
+            <div className="profile-fields public-profile-fields">
+              <label>
+                <span>{text.profile.nameLabel}</span>
+                <input value={profile.name} readOnly disabled />
+              </label>
+            </div>
+          )}
+        </section>
+
+        {!isLoadingProfile && !isError && profile && (
+          <section
+            className="profile-panel"
+            aria-labelledby="public-favorites-title"
+          >
+            <h2 id="public-favorites-title">{text.profile.favorites}</h2>
+            {favorites.length === 0 ? (
+              <p className="profile-empty">{text.profile.publicNoFavorites}</p>
+            ) : (
+              <FavoriteSections
+                favorites={favorites}
+                selectedFavoriteId={selectedFavoriteId}
+                statusFilters={statusFilters}
+                text={text}
+                onFavoriteClick={(favorite) =>
+                  setSelectedFavoriteId(favorite.contentId)
+                }
+                onStatusFilterChange={handleStatusFilterChange}
+              />
+            )}
+          </section>
+        )}
+      </section>
+
+      {selectedFavorite && (
+        <FavoriteDetailsModal
+          favorite={selectedFavorite}
+          isReadOnly
+          isSaving={false}
+          key={`${selectedFavorite.contentId}:${selectedFavorite.status}:${selectedFavorite.userRating ?? ""}:${selectedFavorite.moment ?? ""}`}
+          onClose={() => setSelectedFavoriteId(null)}
+          text={text}
         />
       )}
     </main>
