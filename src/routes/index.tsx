@@ -69,7 +69,8 @@ export function AppRoutes() {
     return (
       <PrivateRoute onBlocked={() => navigate(appRoutes.login)}>
         <ProfilePage
-          onBackToContent={() => navigate(appRoutes.main)}
+          onCategoryClick={() => navigate(appRoutes.main)}
+          onProfileClick={handleProfileClick}
           onLogout={() => navigate(appRoutes.login)}
         />
       </PrivateRoute>

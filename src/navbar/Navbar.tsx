@@ -52,16 +52,18 @@ export function Navbar({
         </div>
 
         <div className="category-menu">
-          {contentCategories.map((category) => (
-            <button
-              key={category}
-              type="button"
-              className={category === activeCategory ? "active" : undefined}
-              onClick={() => handleCategoryClick(category)}
-            >
-              {contentCategoryLabels[category]}
-            </button>
-          ))}
+          {contentCategories
+            .filter((category) => !["NULL"].includes(category))
+            .map((category) => (
+              <button
+                key={category}
+                type="button"
+                className={category === activeCategory ? "active" : undefined}
+                onClick={() => handleCategoryClick(category)}
+              >
+                {contentCategoryLabels[category]}
+              </button>
+            ))}
         </div>
       </nav>
     </header>

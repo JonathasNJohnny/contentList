@@ -1,4 +1,5 @@
 export type ContentCategory =
+  | "NULL"
   | "Para Voce"
   | "Animes"
   | "Mangas"
@@ -41,6 +42,7 @@ type ApiContentResponse =
     };
 
 export const contentCategories: ContentCategory[] = [
+  "NULL",
   "Para Voce",
   "Animes",
   "Mangas",
@@ -51,6 +53,7 @@ export const contentCategories: ContentCategory[] = [
 ];
 
 export const contentCategoryLabels: Record<ContentCategory, string> = {
+  NULL: "NULL",
   "Para Voce": "Para Você",
   Animes: "Animes",
   Mangas: "Mangas",
@@ -61,6 +64,7 @@ export const contentCategoryLabels: Record<ContentCategory, string> = {
 };
 
 const categorySlugs: Record<ContentCategory, string> = {
+  NULL: "NULL",
   "Para Voce": "todos",
   Animes: "animes",
   Mangas: "mangas",
@@ -91,8 +95,13 @@ function normalizeContentResponse(result: ApiContentResponse): ContentResponse {
 
   const items = result.items ?? result.data ?? [];
   const lastPage =
-    result.lastPage ?? result.totalPages ?? result.pagination?.lastPage ?? result.pagination?.totalPages ?? 1;
-  const hasNextPage = result.hasNextPage ?? result.pagination?.hasNextPage ?? false;
+    result.lastPage ??
+    result.totalPages ??
+    result.pagination?.lastPage ??
+    result.pagination?.totalPages ??
+    1;
+  const hasNextPage =
+    result.hasNextPage ?? result.pagination?.hasNextPage ?? false;
 
   return {
     items,

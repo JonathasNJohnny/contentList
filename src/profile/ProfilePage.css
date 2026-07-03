@@ -173,35 +173,299 @@
 
 .favorites-list {
   display: grid;
+  gap: 18px;
+}
+
+.favorite-category {
+  display: grid;
   gap: 10px;
 }
 
-.favorite-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 14px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--surface);
+.favorite-category-heading {
+  display: grid;
+  gap: 10px;
 }
 
-.favorite-row h3 {
-  margin: 0 0 4px;
+.favorite-category-heading h3 {
+  margin: 0;
   color: var(--text-h);
   font-size: 18px;
   font-weight: 600;
 }
 
-.favorite-row span {
-  flex: 0 0 auto;
-  padding: 4px 8px;
+.favorite-status-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.favorite-status-tabs button {
+  min-height: 34px;
+  padding: 0 10px;
   border: 1px solid var(--border);
   border-radius: 6px;
+  color: var(--text);
+  background: var(--surface-soft);
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.favorite-status-tabs button.active {
+  color: var(--accent);
+  border-color: var(--accent-border);
+  background: var(--accent-bg);
+}
+
+.favorite-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 14px;
+}
+
+.favorite-card {
+  display: grid;
+  grid-template-rows: 210px 1fr;
+  min-height: 430px;
+  overflow: hidden;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: inherit;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+}
+
+.favorite-card:hover,
+.favorite-card:focus-visible {
+  outline: none;
+  border-color: var(--accent-border);
+  box-shadow: var(--focus-ring);
+}
+
+.favorite-card-poster {
+  display: grid;
+  place-items: center;
+  height: 210px;
+  overflow: hidden;
   color: var(--text-muted);
   background: var(--surface-soft);
+}
+
+.favorite-card-poster img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.favorite-card-info {
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  gap: 10px;
+  padding: 12px;
+}
+
+.favorite-card-info h4 {
+  display: -webkit-box;
+  min-height: 44px;
+  margin: 0;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  color: var(--text-h);
+  font-size: 18px;
+  line-height: 1.2;
+}
+
+.favorite-card-info dl {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+}
+
+.favorite-card-info dl div {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.favorite-card-info dt {
+  color: var(--text-muted);
+  font-size: 12px;
+}
+
+.favorite-card-info dd {
+  margin: 0;
+  color: var(--text-h);
   font-size: 13px;
+  font-weight: 600;
+  text-align: right;
+}
+
+.favorite-card-info p {
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.favorite-main {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+}
+
+.favorite-controls {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.favorite-controls label,
+.favorite-comment {
+  display: grid;
+  gap: 6px;
+}
+
+.favorite-controls span,
+.favorite-comment span {
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.favorite-controls input,
+.favorite-controls select,
+.favorite-comment textarea {
+  width: 100%;
+  min-height: 38px;
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-h);
+  background: var(--surface-soft);
+  font: inherit;
+  box-sizing: border-box;
+}
+
+.favorite-comment textarea {
+  min-height: 76px;
+  padding: 9px 10px;
+  resize: vertical;
+}
+
+.favorite-actions {
+  display: grid;
+  gap: 8px;
+}
+
+.favorite-actions button {
+  min-width: 92px;
+  min-height: 38px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-h);
+  background: var(--surface-soft);
+  font: inherit;
+  cursor: pointer;
+}
+
+.favorite-actions .danger-action {
+  color: var(--danger);
+}
+
+.favorite-actions button:hover:not(:disabled),
+.favorite-actions button:focus-visible {
+  outline: none;
+  border-color: var(--accent-border);
+  box-shadow: var(--focus-ring);
+}
+
+.favorite-actions button:disabled,
+.favorite-controls input:disabled,
+.favorite-controls select:disabled,
+.favorite-comment textarea:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.favorite-details-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.46);
+}
+
+.favorite-details-modal {
+  display: grid;
+  gap: 14px;
+  width: min(100%, 640px);
+  max-height: calc(100svh - 40px);
+  overflow: auto;
+  padding: 20px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.favorite-details-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.favorite-details-heading h3 {
+  margin: 0 0 4px;
+  color: var(--text-h);
+  font-size: 24px;
+  line-height: 1.15;
+}
+
+.favorite-details-heading p {
+  color: var(--text-muted);
+}
+
+.favorite-details-heading button {
+  min-height: 38px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-h);
+  background: var(--surface-soft);
+  font: inherit;
+  cursor: pointer;
+}
+
+.favorite-details-poster {
+  display: grid;
+  place-items: center;
+  width: 120px;
+  aspect-ratio: 2 / 3;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text-muted);
+  background: var(--surface-soft);
+}
+
+.favorite-details-poster img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.profile-empty {
+  color: var(--text-muted);
+  font-size: 14px;
 }
 
 @media (max-width: 640px) {
@@ -210,8 +474,7 @@
     padding-top: 24px;
   }
 
-  .profile-heading,
-  .favorite-row {
+  .profile-heading {
     align-items: flex-start;
     flex-direction: column;
   }
@@ -224,5 +487,44 @@
 
   .profile-actions button {
     flex: 1 1 0;
+  }
+
+  .favorite-controls {
+    grid-template-columns: 1fr;
+  }
+
+  .favorite-actions {
+    display: flex;
+    width: 100%;
+  }
+
+  .favorite-actions button {
+    flex: 1 1 0;
+  }
+
+  .favorite-card-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .favorite-card {
+    grid-template-rows: 170px 1fr;
+    min-height: 390px;
+  }
+
+  .favorite-card-poster {
+    height: 170px;
+  }
+
+  .favorite-details-modal {
+    padding: 16px;
+  }
+
+  .favorite-details-heading {
+    flex-direction: column;
+  }
+
+  .favorite-details-heading button {
+    width: 100%;
   }
 }
