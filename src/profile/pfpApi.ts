@@ -14,7 +14,7 @@ export type PublicProfileUser = {
 };
 
 type ProfileApiResponse = {
-  user?: AuthUser | PublicProfileUser;
+  user?: AuthUser | PublicProfileUser | PublicProfileUser[];
   users?: PublicProfileUser[];
   favorites?: Favorite[];
   items?: Favorite[];
@@ -106,8 +106,9 @@ async function requestProfile(
 function normalizeProfileUser(result: ProfileApiResponse) {
   const data = result.data;
   const dataUser = data && "user" in data ? (data.user ?? null) : null;
+  const resultUser = Array.isArray(result.user) ? null : result.user;
 
-  return result.user ?? dataUser ?? (data && "email" in data ? data : null);
+  return resultUser ?? dataUser ?? (data && "email" in data ? data : null);
 }
 
 function normalizePublicProfileUser(
@@ -147,8 +148,12 @@ function normalizePublicUsers(result: ProfileApiResponse): PublicProfileUser[] {
   const data = result.data;
   const users =
     result.users ??
+    (Array.isArray(result.user) ? result.user : undefined) ??
     (Array.isArray(data) ? data : undefined) ??
     (data && "users" in data ? data.users : undefined) ??
+    (data && "user" in data && Array.isArray(data.user)
+      ? data.user
+      : undefined) ??
     [];
 
   return users
