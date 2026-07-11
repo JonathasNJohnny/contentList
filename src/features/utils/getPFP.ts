@@ -17,5 +17,9 @@ Object.entries(localImages).forEach(([path, image]) => {
 export function useActualPFP(number?: string) {
   const { user } = useAuth();
 
-  return localPFPs[number || user?.pfp || ""] || user?.pfp;
+  console.log("localPFPs:", localPFPs);
+
+  return (
+    localPFPs[number || user?.pfp || ""] || user?.pfp || localPFPs[7] || ""
+  );
 }
