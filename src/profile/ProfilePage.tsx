@@ -3,7 +3,12 @@ import { useAuth } from "../authentication/authContextValue";
 import "./ProfilePage.css";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Icon } from "@iconify/react";
-import { getOtherUsers, getUserProfileByName, updateName } from "./pfpApi";
+import {
+  getOtherUsers,
+  getUserProfileByName,
+  updateName,
+  updatePic,
+} from "./pfpApi";
 import {
   getContentTypeFromCategory,
   getFavorites,
@@ -16,6 +21,7 @@ import {
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Navbar } from "../navbar";
 import { useLanguage } from "../pageText";
+import { useActualPFP } from "../features/utils/getPFP";
 
 type AppText = ReturnType<typeof useLanguage>["text"];
 
@@ -29,6 +35,19 @@ type ProfilePageProps = {
 const favoriteCategories = contentCategories.filter(
   (category) => !["Para Voce", "NULL"].includes(category),
 );
+
+const profilePictureEntries = Object.entries(
+  import.meta.glob("../imgs/*.png", {
+    eager: true,
+    import: "default",
+  }),
+)
+  .map(([path, src]) => ({
+    name: path.split("/").pop()?.replace(".png", "") ?? "",
+    src: src as string,
+  }))
+  .filter((picture) => picture.name.length > 0)
+  .sort((left, right) => Number(left.name) - Number(right.name));
 
 function getStatusLabels(
   contentType: string,
@@ -345,6 +364,182 @@ function FavoriteDetailsModal({
   );
 }
 
+function ProfilePictureModal({
+  isSaving,
+  onClose,
+  onSave,
+  onSelect,
+  selectedPfp,
+}: {
+  isSaving: boolean;
+  onClose: () => void;
+  onSave: () => void;
+  onSelect: (pfp: string) => void;
+  selectedPfp: string;
+}) {
+  return (
+    <div
+      className="profile-picture-backdrop"
+      role="presentation"
+      onClick={onClose}
+    >
+      <section
+        className="profile-picture-modal"
+        aria-labelledby="profile-picture-modal-title"
+        role="dialog"
+        aria-modal="true"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="profile-picture-modal-heading">
+          <div>
+            <h3 id="profile-picture-modal-title">Escolha uma foto</h3>
+            <p>Selecione uma imagem para o seu perfil.</p>
+          </div>
+          <button type="button" onClick={onClose} disabled={isSaving}>
+            Fechar
+          </button>
+        </div>
+
+        <div className="profile-picture-grid">
+          {profilePictureEntries.map((picture) => {
+            const isSelected = selectedPfp === picture.name;
+
+            return (
+              <button
+                type="button"
+                className={isSelected ? "is-selected" : undefined}
+                key={picture.name}
+                onClick={() => onSelect(picture.name)}
+              >
+                <img
+                  src={picture.src}
+                  alt={`Foto de perfil ${picture.name}.png`}
+                />
+                <span>{picture.name}.png</span>
+              </button>
+            );
+          })}
+
+          <button
+            type="button"
+            className="profile-picture-upload"
+            disabled
+            aria-disabled="true"
+            title="Upload em breve"
+          >
+            <Icon
+              className="profile-picture-upload-icon"
+              icon="mdi:arrow-up-circle"
+            />
+            <span>Upload</span>
+          </button>
+        </div>
+
+        <div className="profile-picture-actions">
+          <button type="button" onClick={onSave} disabled={isSaving}>
+            Salvar
+          </button>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function SettingsModal({
+  isSavingName,
+  nameFeedback,
+  nameFeedbackType,
+  nameInput,
+  onClose,
+  onLogout,
+  onNameChange,
+  onSaveName,
+  setNameFeedback,
+  setNameFeedbackType,
+  text,
+  userName,
+}: {
+  isSavingName: boolean;
+  nameFeedback: string;
+  nameFeedbackType: "success" | "error" | null;
+  nameInput: string;
+  onClose: () => void;
+  onLogout: () => void;
+  onNameChange: (value: string) => void;
+  onSaveName: () => void;
+  setNameFeedback: (value: string) => void;
+  setNameFeedbackType: (value: "success" | "error" | null) => void;
+  text: AppText;
+  userName: string;
+}) {
+  return (
+    <div className="settings-backdrop" role="presentation" onClick={onClose}>
+      <section
+        className="settings-modal"
+        aria-labelledby="settings-modal-title"
+        role="dialog"
+        aria-modal="true"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="settings-modal-heading">
+          <div>
+            <h3 id="settings-modal-title">Configurações</h3>
+            <p>Gerencie seu nome e a saída da conta.</p>
+          </div>
+          <button type="button" onClick={onClose} disabled={isSavingName}>
+            Fechar
+          </button>
+        </div>
+
+        <section className="settings-section">
+          <h4>Nome</h4>
+          <div className="settings-name-field">
+            <input
+              value={nameInput}
+              onChange={(event) => onNameChange(event.target.value)}
+              disabled={isSavingName}
+            />
+            <button
+              type="button"
+              onClick={onSaveName}
+              disabled={isSavingName}
+              aria-label={text.profile.saveName}
+              title={text.profile.saveName}
+            >
+              <Icon
+                className={`edit-icon ${isSavingName ? "is-loading" : ""}`}
+                icon={isSavingName ? "mdi:loading" : "mdi:content-save-edit"}
+              />
+            </button>
+          </div>
+          <p className="settings-current-user">Atual: {userName}</p>
+          {nameFeedback && (
+            <p className={`profile-feedback ${nameFeedbackType ?? ""}`}>
+              {nameFeedback}
+            </p>
+          )}
+        </section>
+
+        <section className="settings-section">
+          <h4>Sair</h4>
+          <button
+            type="button"
+            className="settings-logout-button"
+            onClick={() => {
+              onClose();
+              onLogout();
+              setNameFeedback("");
+              setNameFeedbackType(null);
+            }}
+          >
+            Sair da conta
+          </button>
+        </section>
+      </section>
+    </div>
+  );
+}
+
 function useParams() {
   const match = window.location.pathname.match(/^\/profile\/([^/]+)\/?$/);
 
@@ -551,13 +746,20 @@ export function ProfilePage({
   const { text } = useLanguage();
   const queryClient = useQueryClient();
 
-  const [isEditingName, setIsEditingName] = useState<boolean>(false);
   const [nameInput, setNameInput] = useState<string>(user?.name ?? "");
   const [isSavingName, setIsSavingName] = useState<boolean>(false);
   const [nameFeedback, setNameFeedback] = useState("");
   const [nameFeedbackType, setNameFeedbackType] = useState<
     "success" | "error" | null
   >(null);
+  const [isPictureModalOpen, setIsPictureModalOpen] = useState(false);
+  const [selectedPfp, setSelectedPfp] = useState(user?.pfp ?? "");
+  const [isSavingPic, setIsSavingPic] = useState(false);
+  const [picFeedback, setPicFeedback] = useState("");
+  const [picFeedbackType, setPicFeedbackType] = useState<
+    "success" | "error" | null
+  >(null);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [favoritesFeedback, setFavoritesFeedback] = useState("");
   const [favoritesFeedbackType, setFavoritesFeedbackType] = useState<
     "success" | "error" | null
@@ -643,6 +845,51 @@ export function ProfilePage({
     onLogout();
   }
 
+  function handleOpenPictureModal() {
+    setSelectedPfp(user?.pfp ?? "");
+    setPicFeedback("");
+    setPicFeedbackType(null);
+    setIsPictureModalOpen(true);
+  }
+
+  function handleOpenSettings() {
+    setNameInput(user?.name ?? "");
+    setNameFeedback("");
+    setNameFeedbackType(null);
+    setIsSettingsOpen(true);
+  }
+
+  async function handleSavePic() {
+    if (!token) {
+      setPicFeedback(text.profile.sessionExpired);
+      setPicFeedbackType("error");
+      return;
+    }
+
+    try {
+      setIsSavingPic(true);
+      setPicFeedback("");
+      setPicFeedbackType(null);
+
+      const updatedUser = await updatePic(token, {
+        pfp: selectedPfp,
+      });
+
+      await loadUser();
+      setSelectedPfp(updatedUser.pfp);
+      setIsPictureModalOpen(false);
+      setPicFeedback("Foto de perfil atualizada.");
+      setPicFeedbackType("success");
+    } catch (error) {
+      setPicFeedback(
+        error instanceof Error ? error.message : text.profile.nameUpdateError,
+      );
+      setPicFeedbackType("error");
+    } finally {
+      setIsSavingPic(false);
+    }
+  }
+
   async function handleSaveName() {
     const trimmedName = nameInput.trim();
 
@@ -660,7 +907,6 @@ export function ProfilePage({
 
     if (trimmedName === user?.name) {
       setNameInput(trimmedName);
-      setIsEditingName(false);
       setNameFeedback("");
       setNameFeedbackType(null);
       return;
@@ -677,7 +923,6 @@ export function ProfilePage({
 
       setNameInput(updatedUser.name);
       await loadUser();
-      setIsEditingName(false);
       setNameFeedback(text.profile.nameUpdated);
       setNameFeedbackType("success");
     } catch (error) {
@@ -722,9 +967,20 @@ export function ProfilePage({
 
       <section className="profile-shell" aria-labelledby="profile-title">
         <div className="profile-heading">
-          <div>
-            <h1 id="profile-title">{text.profile.title}</h1>
-            <p>{user?.name ?? text.profile.userFallback}</p>
+          <div className="profile-heading-box">
+            <img
+              className="profile-picture"
+              src={useActualPFP()}
+              alt={text.navbar.profileAlt}
+              title={text.navbar.profileTitle}
+              onClick={handleOpenPictureModal}
+            />
+            <div className="profile-heading-copy">
+              <p className="profile-username">
+                {user?.name ?? text.profile.userFallback}
+              </p>
+              {/* <p className="profile-subtitle">{text.profile.accountData}</p> */}
+            </div>
           </div>
 
           <div className="profile-actions">
@@ -736,61 +992,21 @@ export function ProfilePage({
           </div>
         </div>
 
-        <section className="profile-panel" aria-labelledby="profile-data-title">
+        {picFeedback && (
+          <p className={`profile-feedback ${picFeedbackType ?? ""}`}>
+            {picFeedback}
+          </p>
+        )}
+
+        {/* <section className="profile-panel" aria-labelledby="profile-data-title">
           <h2 id="profile-data-title">{text.profile.accountData}</h2>
-          <div className="profile-fields">
+          <div className="profile-summary-card">
             <label>
               <span>{text.profile.nameLabel}</span>
-              <div className="name-field">
-                <input
-                  value={isEditingName ? nameInput : (user?.name ?? "")}
-                  readOnly={!isEditingName}
-                  onChange={(e) => setNameInput(e.target.value)}
-                  disabled={isSavingName}
-                />
-                {isEditingName ? (
-                  <button
-                    type="button"
-                    onClick={handleSaveName}
-                    disabled={isSavingName}
-                    aria-label={text.profile.saveName}
-                    title={text.profile.saveName}
-                  >
-                    <Icon
-                      className={`edit-icon ${isSavingName ? "is-loading" : ""}`}
-                      icon={
-                        isSavingName ? "mdi:loading" : "mdi:content-save-edit"
-                      }
-                    />
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setNameInput(user?.name ?? "");
-                      setNameFeedback("");
-                      setNameFeedbackType(null);
-                      setIsEditingName(true);
-                    }}
-                    aria-label={text.profile.editName}
-                    title={text.profile.editName}
-                  >
-                    <Icon className="edit-icon" icon="mdi:pencil" />
-                  </button>
-                )}
-              </div>
+              <input value={user?.name ?? ""} readOnly disabled />
             </label>
-            {/* <label>
-              <span>E-mail</span>
-              <input value={user?.email ?? ""} readOnly />
-            </label> */}
           </div>
-          {nameFeedback && (
-            <p className={`profile-feedback ${nameFeedbackType ?? ""}`}>
-              {nameFeedback}
-            </p>
-          )}
-        </section>
+        </section> */}
 
         <section className="profile-panel" aria-labelledby="favorites-title">
           <h2 id="favorites-title">{text.profile.favorites}</h2>
@@ -827,6 +1043,33 @@ export function ProfilePage({
         </section>
       </section>
 
+      {isPictureModalOpen && (
+        <ProfilePictureModal
+          isSaving={isSavingPic}
+          onClose={() => setIsPictureModalOpen(false)}
+          onSave={handleSavePic}
+          onSelect={setSelectedPfp}
+          selectedPfp={selectedPfp || (user?.pfp ?? "")}
+        />
+      )}
+
+      {isSettingsOpen && (
+        <SettingsModal
+          isSavingName={isSavingName}
+          nameFeedback={nameFeedback}
+          nameFeedbackType={nameFeedbackType}
+          nameInput={nameInput}
+          onClose={() => setIsSettingsOpen(false)}
+          onLogout={handleLogout}
+          onNameChange={setNameInput}
+          onSaveName={handleSaveName}
+          setNameFeedback={setNameFeedback}
+          setNameFeedbackType={setNameFeedbackType}
+          text={text}
+          userName={user?.name ?? text.profile.userFallback}
+        />
+      )}
+
       {selectedFavorite && (
         <FavoriteDetailsModal
           favorite={selectedFavorite}
@@ -838,8 +1081,14 @@ export function ProfilePage({
           text={text}
         />
       )}
-      <button type="button" className="danger-action" onClick={handleLogout}>
-        {text.profile.logout}
+      <button
+        type="button"
+        className="profile-settings-button profile-settings-button-bottom"
+        onClick={handleOpenSettings}
+        aria-label="Configurações"
+        title="Configurações"
+      >
+        <Icon icon="mdi:cog-outline" />
       </button>
     </main>
   );
@@ -916,9 +1165,17 @@ export function PublicProfilePage({
 
       <section className="profile-shell" aria-labelledby="public-profile-title">
         <div className="profile-heading">
-          <div>
-            <h1 id="public-profile-title">{text.profile.publicTitle}</h1>
-            <p>{profile?.name ?? (trimmedName || text.profile.userFallback)}</p>
+          <div className="profile-heading-box">
+            <img
+              className="profile-picture"
+              src={useActualPFP(profile?.pfp)}
+              alt={text.navbar.profileAlt}
+              title={text.navbar.profileTitle}
+              onClick={onProfileClick}
+            />
+            <p className="profile-username">
+              {profile?.name ?? (trimmedName || text.profile.userFallback)}
+            </p>
           </div>
 
           <div className="profile-actions">
@@ -934,7 +1191,7 @@ export function PublicProfilePage({
         </div>
 
         <section className="profile-panel" aria-labelledby="public-data-title">
-          <h2 id="public-data-title">{text.profile.publicData}</h2>
+          {/* <h2 id="public-data-title">{text.profile.publicData}</h2> */}
           {isLoadingProfile && (
             <p className="profile-empty">{text.profile.loadingProfile}</p>
           )}
@@ -950,14 +1207,14 @@ export function PublicProfilePage({
                 : text.profile.fetchProfileError}
             </p>
           )}
-          {!isLoadingProfile && !isError && profile && (
+          {/* {!isLoadingProfile && !isError && profile && (
             <div className="profile-fields public-profile-fields">
               <label>
                 <span>{text.profile.nameLabel}</span>
                 <input value={profile.name} readOnly disabled />
               </label>
             </div>
-          )}
+          )} */}
         </section>
 
         {!isLoadingProfile && !isError && profile && (

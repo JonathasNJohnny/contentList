@@ -6,10 +6,15 @@ export type UpdateNameInput = {
   name: string;
 };
 
+export type UpdatePicInput = {
+  pfp: string;
+};
+
 export type PublicProfileUser = {
   id?: string;
   _id?: string;
   name: string;
+  pfp: string;
   favorites: Favorite[];
 };
 
@@ -37,6 +42,7 @@ type PublicProfilePayload = {
   id?: string;
   _id?: string;
   name?: string;
+  pfp: string;
   favorites?: Favorite[];
   items?: Favorite[];
 };
@@ -140,6 +146,7 @@ function normalizePublicProfileUser(
     id: rawUser.id,
     _id: rawUser._id,
     name: rawUser.name,
+    pfp: rawUser.pfp ?? "",
     favorites,
   };
 }
@@ -159,6 +166,7 @@ function normalizePublicUsers(result: ProfileApiResponse): PublicProfileUser[] {
   return users
     .filter((user): user is PublicProfileUser => Boolean(user?.name))
     .map((user) => ({
+      pfp: user.pfp,
       name: user.name,
       favorites: [],
     }));
@@ -174,6 +182,23 @@ export async function updateName(token: string, input: UpdateNameInput) {
 
   if (!user) {
     throw new Error("Nome atualizado, mas o usuario nao foi retornado.");
+  }
+
+  return user;
+}
+
+export async function updatePic(token: string, input: UpdatePicInput) {
+  const result = await requestProfile("/auth/me/pic", {
+    method: "PUT",
+    headers: getAuthorizationHeader(token),
+    body: JSON.stringify(input),
+  });
+  const user = normalizeProfileUser(result);
+
+  if (!user) {
+    throw new Error(
+      "Imagem de perfil atualizada, mas o usuario nao foi retornado.",
+    );
   }
 
   return user;

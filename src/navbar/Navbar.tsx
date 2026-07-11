@@ -1,10 +1,8 @@
-import {
-  contentCategories,
-  type ContentCategory,
-} from "../content/contentApi";
+import { contentCategories, type ContentCategory } from "../content/contentApi";
 import { useState } from "react";
 import { useLanguage } from "../pageText";
 import "./Navbar.css";
+import { useActualPFP } from "../features/utils/getPFP";
 
 type NavbarProps = {
   activeCategory: ContentCategory;
@@ -34,7 +32,7 @@ export function Navbar({
         <div className="navbar-top">
           <img
             className="profile-picture"
-            src="https://www.transparentpng.com/thumb/circle/PbI15B-circle-transparent-background.png"
+            src={useActualPFP()}
             alt={text.navbar.profileAlt}
             title={text.navbar.profileTitle}
             onClick={onProfileClick}

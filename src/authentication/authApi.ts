@@ -1,6 +1,7 @@
 import { getAuthorizationHeader } from "./tokenStorage";
 
 export type AuthUser = {
+  pfp: string;
   id?: string;
   _id?: string;
   name: string;
@@ -93,7 +94,9 @@ async function requestAuth(
   const result = await readResponse(response);
 
   if (!response.ok) {
-    throw new Error(getFriendlyAuthError(response.status, result.error ?? result.message));
+    throw new Error(
+      getFriendlyAuthError(response.status, result.error ?? result.message),
+    );
   }
 
   return result;
@@ -102,8 +105,8 @@ async function requestAuth(
 function normalizeAuthResult(result: AuthApiResponse): AuthResult {
   const data = result.data;
   const dataToken =
-    data && "token" in data ? data.token ?? data.accessToken ?? null : null;
-  const dataUser = data && "user" in data ? data.user ?? null : null;
+    data && "token" in data ? (data.token ?? data.accessToken ?? null) : null;
+  const dataUser = data && "user" in data ? (data.user ?? null) : null;
 
   return {
     user: result.user ?? dataUser ?? (data && "email" in data ? data : null),

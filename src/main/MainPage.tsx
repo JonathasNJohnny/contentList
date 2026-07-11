@@ -61,7 +61,10 @@ function getFavoriteStatusOptions(
   ];
 }
 
-function getFavoriteMomentLabel(contentType: string, text: ReturnType<typeof useLanguage>["text"]) {
+function getFavoriteMomentLabel(
+  contentType: string,
+  text: ReturnType<typeof useLanguage>["text"],
+) {
   if (contentType === "anime" || contentType === "series") {
     return text.profile.moment.episode;
   }
@@ -75,14 +78,16 @@ function getFavoriteMomentLabel(contentType: string, text: ReturnType<typeof use
 
 type MainPageProps = {
   onProfileClick: () => void;
+  initialCategory?: ContentCategory;
 };
 
-export function MainPage({ onProfileClick }: MainPageProps) {
+export function MainPage({ onProfileClick, initialCategory }: MainPageProps) {
   const { token } = useAuth();
   const { text } = useLanguage();
   const queryClient = useQueryClient();
-  const [activeCategory, setActiveCategory] =
-    useState<ContentCategory>("Animes");
+  const [activeCategory, setActiveCategory] = useState<ContentCategory>(
+    initialCategory ?? "Animes",
+  );
   const [contentPage, setContentPage] = useState(1);
   const [searchInput, setSearchInput] = useState("");
   const [searchQuery, setSearchQuery] = useState("");
@@ -142,9 +147,7 @@ export function MainPage({ onProfileClick }: MainPageProps) {
         photoUrl: input.photoUrl,
         status: input.status,
         userRating:
-          input.userRating.trim() === ""
-            ? undefined
-            : Number(input.userRating),
+          input.userRating.trim() === "" ? undefined : Number(input.userRating),
         startDate: input.startDate || undefined,
         endDate: input.endDate || undefined,
         moment: input.moment.trim() === "" ? undefined : Number(input.moment),
@@ -159,9 +162,7 @@ export function MainPage({ onProfileClick }: MainPageProps) {
     },
     onError: (error) => {
       setFavoriteFeedback(
-        error instanceof Error
-          ? error.message
-          : text.main.favoriteAddError,
+        error instanceof Error ? error.message : text.main.favoriteAddError,
       );
       setFavoriteFeedbackType("error");
     },
@@ -256,9 +257,7 @@ export function MainPage({ onProfileClick }: MainPageProps) {
   }
 
   const errorMessage =
-    error instanceof Error
-      ? error.message
-      : text.main.categoryLoadError;
+    error instanceof Error ? error.message : text.main.categoryLoadError;
 
   return (
     <main className="main-page">
@@ -276,7 +275,10 @@ export function MainPage({ onProfileClick }: MainPageProps) {
           </div>
 
           {!isForYouPage && (
-            <div className="pagination-status" aria-label={text.main.currentPage}>
+            <div
+              className="pagination-status"
+              aria-label={text.main.currentPage}
+            >
               {text.main.page} {contentPage}
             </div>
           )}
@@ -373,51 +375,57 @@ export function MainPage({ onProfileClick }: MainPageProps) {
                     !isFetchingFavorites;
 
                   return (
-                  <article
-                    className={`content-card ${isFavorited ? "is-favorited" : ""}`}
-                    key={`${contentListKey}:${item.id || item.title}:${index}`}
-                  >
-                    <div className="content-poster">
-                      {item.image ? (
-                        <img src={item.image} alt={item.title} loading="lazy" />
-                      ) : (
-                        <span>{text.main.noImage}</span>
-                      )}
-                    </div>
+                    <article
+                      className={`content-card ${isFavorited ? "is-favorited" : ""}`}
+                      key={`${contentListKey}:${item.id || item.title}:${index}`}
+                    >
+                      <div className="content-poster">
+                        {item.image ? (
+                          <img
+                            src={item.image}
+                            alt={item.title}
+                            loading="lazy"
+                          />
+                        ) : (
+                          <span>{text.main.noImage}</span>
+                        )}
+                      </div>
 
-                    <div className="content-info">
-                      <h2>{item.title}</h2>
-                      <dl>
-                        <div>
-                          <dt>{text.main.typeLabel}</dt>
-                          <dd>{item.meta.first}</dd>
-                        </div>
-                        <div>
-                          <dt>{text.main.ratingLabel}</dt>
-                          <dd>{item.meta.second}</dd>
-                        </div>
-                        <div>
-                          <dt>{text.main.yearLabel}</dt>
-                          <dd>{item.meta.third}</dd>
-                        </div>
-                      </dl>
-                      <p>{item.description ?? text.main.noDescription}</p>
-                      <button
-                        type="button"
-                        className="favorite-button"
-                        onClick={() =>
-                          handleOpenFavoriteDraft(
-                            item.id,
-                            item.title,
-                            item.image,
-                          )
-                        }
-                        disabled={!canClickFavorite}
-                      >
-                        {isFavorited ? text.main.favorited : text.main.addFavorite}
-                      </button>
-                    </div>
-                  </article>
+                      <div className="content-info">
+                        <h2>{item.title}</h2>
+                        <dl>
+                          <div>
+                            <dt>{text.main.typeLabel}</dt>
+                            <dd>{item.meta.first}</dd>
+                          </div>
+                          <div>
+                            <dt>{text.main.ratingLabel}</dt>
+                            <dd>{item.meta.second}</dd>
+                          </div>
+                          <div>
+                            <dt>{text.main.yearLabel}</dt>
+                            <dd>{item.meta.third}</dd>
+                          </div>
+                        </dl>
+                        <p>{item.description ?? text.main.noDescription}</p>
+                        <button
+                          type="button"
+                          className="favorite-button"
+                          onClick={() =>
+                            handleOpenFavoriteDraft(
+                              item.id,
+                              item.title,
+                              item.image,
+                            )
+                          }
+                          disabled={!canClickFavorite}
+                        >
+                          {isFavorited
+                            ? text.main.favorited
+                            : text.main.addFavorite}
+                        </button>
+                      </div>
+                    </article>
                   );
                 })}
           </div>
@@ -449,10 +457,15 @@ export function MainPage({ onProfileClick }: MainPageProps) {
       </section>
 
       {favoriteDraft && (
-        <div className="favorite-modal-backdrop" role="presentation">
+        <div
+          className="favorite-modal-backdrop"
+          role="presentation"
+          onClick={() => setFavoriteDraft(null)}
+        >
           <section
             className="favorite-modal"
             aria-labelledby="favorite-modal-title"
+            onClick={(event) => event.stopPropagation()}
           >
             <div className="favorite-modal-heading">
               <div>
@@ -502,7 +515,10 @@ export function MainPage({ onProfileClick }: MainPageProps) {
                     step="1"
                     value={favoriteDraft.userRating}
                     onChange={(event) =>
-                      handleFavoriteDraftChange("userRating", event.target.value)
+                      handleFavoriteDraftChange(
+                        "userRating",
+                        event.target.value,
+                      )
                     }
                     disabled={addFavoriteMutation.isPending}
                   />
@@ -572,7 +588,9 @@ export function MainPage({ onProfileClick }: MainPageProps) {
                   className="primary-favorite-action"
                   disabled={addFavoriteMutation.isPending}
                 >
-                  {addFavoriteMutation.isPending ? text.main.adding : text.main.add}
+                  {addFavoriteMutation.isPending
+                    ? text.main.adding
+                    : text.main.add}
                 </button>
               </div>
             </form>
