@@ -172,7 +172,7 @@ export function MainPage({ onProfileClick, initialCategory }: MainPageProps) {
   const favoriteContentIds = new Set(
     favorites.map((favorite) => favorite.contentId),
   );
-  const lastPage = data?.lastPage ?? 1;
+  // const lastPage = data?.lastPage ?? 1;
   const hasNextPage = data?.hasNextPage ?? false;
   const contentListKey = `${activeCategory}:${contentPage}:${trimmedSearchQuery || "all"}`;
   const shouldShowSkeleton = !isForYouPage && isPending;
