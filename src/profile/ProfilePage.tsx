@@ -415,7 +415,7 @@ function ProfilePictureModal({
                   src={picture.src}
                   alt={`Foto de perfil ${picture.name}.png`}
                 />
-                <span>{picture.name}.png</span>
+                <span>{picture.name}</span>
               </button>
             );
           })}
@@ -483,16 +483,16 @@ function SettingsModal({
       >
         <div className="settings-modal-heading">
           <div>
-            <h3 id="settings-modal-title">Configurações</h3>
-            <p>Gerencie seu nome e a saída da conta.</p>
+            <h3 id="settings-modal-title">{text.profile.config}</h3>
+            <p>{text.profile.manageName}</p>
           </div>
           <button type="button" onClick={onClose} disabled={isSavingName}>
-            Fechar
+            {text.profile.close}
           </button>
         </div>
 
         <section className="settings-section">
-          <h4>Nome</h4>
+          <h4>{text.profile.nameLabel}</h4>
           <div className="settings-name-field">
             <input
               value={nameInput}
@@ -512,7 +512,9 @@ function SettingsModal({
               />
             </button>
           </div>
-          <p className="settings-current-user">Atual: {userName}</p>
+          <p className="settings-current-user">
+            {text.profile.actual}: {userName}
+          </p>
           {nameFeedback && (
             <p className={`profile-feedback ${nameFeedbackType ?? ""}`}>
               {nameFeedback}
@@ -521,7 +523,7 @@ function SettingsModal({
         </section>
 
         <section className="settings-section">
-          <h4>Sair</h4>
+          {/* <h4>{text.profile.logout}</h4> */}
           <button
             type="button"
             className="settings-logout-button"
@@ -532,7 +534,7 @@ function SettingsModal({
               setNameFeedbackType(null);
             }}
           >
-            Sair da conta
+            {text.profile.logout}
           </button>
         </section>
       </section>
