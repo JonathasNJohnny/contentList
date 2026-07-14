@@ -432,24 +432,40 @@ export function MainPage({ onProfileClick, initialCategory }: MainPageProps) {
         )}
 
         {!isForYouPage && !hasNoResults && (
-          <div className="pagination-actions">
-            <button
-              type="button"
-              onClick={() =>
-                setContentPage((currentPage) => Math.max(1, currentPage - 1))
-              }
-              disabled={contentPage === 1 || isFetching}
-            >
-              {text.main.previous}
-            </button>
-            <span>{/* {contentPage} / {lastPage} */}</span>
-            <button
-              type="button"
-              onClick={() => setContentPage((currentPage) => currentPage + 1)}
-              disabled={!hasNextPage || isFetching}
-            >
-              {text.main.next}
-            </button>
+          <div>
+            <div className="pagination-actions">
+              {/* Botão Voltar (Seta para Esquerda) */}
+              <button
+                type="button"
+                onClick={() =>
+                  setContentPage((currentPage) => Math.max(currentPage - 1, 1))
+                }
+                disabled={contentPage === 1 || isFetching}
+              >
+                ←
+              </button>
+
+              {/* Botão Restart (Seta Girando no Meio) */}
+              <button
+                type="button"
+                onClick={() => setContentPage(1)}
+                disabled={isFetching}
+              >
+                ↻
+              </button>
+
+              {/* Botão Avançar (Seta para Direita) */}
+              <button
+                type="button"
+                onClick={() => setContentPage((currentPage) => currentPage + 1)}
+                disabled={!hasNextPage || isFetching}
+              >
+                →
+              </button>
+            </div>
+            <div className="pagination-number">
+              <span>{contentPage /*} / {lastPage*/}</span>
+            </div>
           </div>
         )}
       </section>
