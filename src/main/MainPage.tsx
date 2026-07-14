@@ -442,9 +442,7 @@ export function MainPage({ onProfileClick, initialCategory }: MainPageProps) {
             >
               {text.main.previous}
             </button>
-            <span>
-              {contentPage} / {lastPage}
-            </span>
+            <span>{/* {contentPage} / {lastPage} */}</span>
             <button
               type="button"
               onClick={() => setContentPage((currentPage) => currentPage + 1)}
